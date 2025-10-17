@@ -1,0 +1,123 @@
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix ex:  <http://example.org/mes#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Variable 은 반드시 Unit 1개
+ex:VariableShape a sh:NodeShape ;
+  sh:targetClass ex:Variable ;
+  sh:property [
+    sh:path ex:hasUnit ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] .
+
+# Operation 의 precedes 대상은 Operation
+ex:OperationShape a sh:NodeShape ;
+  sh:targetClass ex:Operation ;
+  sh:property [
+    sh:path ex:precedes ;
+    sh:class ex:Operation ;
+  ] .
+
+# 사양 상하한 일관성
+ex:SpecShape a sh:NodeShape ;
+  sh:targetClass ex:Variable ;
+  sh:property [
+    sh:path ex:specUpper ;
+    sh:datatype xsd:double ;
+  ] ;
+  sh:property [
+    sh:path ex:specLower ;
+    sh:datatype xsd:double ;
+  ] .
+
+# WorkOrder 검증 규칙
+ex:WorkOrderShape a sh:NodeShape ;
+  sh:targetClass ex:WorkOrder ;
+  sh:property [
+    sh:path ex:workOrderNumber ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+  ] ;
+  sh:property [
+    sh:path ex:plannedQuantity ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:integer ;
+    sh:minInclusive 1 ;
+  ] ;
+  sh:property [
+    sh:path ex:actualQuantity ;
+    sh:datatype xsd:integer ;
+    sh:minInclusive 0 ;
+  ] ;
+  sh:property [
+    sh:path ex:status ;
+    sh:in ("planned" "in_progress" "completed" "cancelled") ;
+  ] .
+
+# QualityControl 검증 규칙
+ex:QualityControlShape a sh:NodeShape ;
+  sh:targetClass ex:QualityControl ;
+  sh:property [
+    sh:path ex:qualityResult ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:in ("pass" "fail" "pending") ;
+  ] ;
+  sh:property [
+    sh:path ex:timestamp ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:dateTime ;
+  ] .
+
+# Batch 검증 규칙
+ex:BatchShape a sh:NodeShape ;
+  sh:targetClass ex:Batch ;
+  sh:property [
+    sh:path ex:batchNumber ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+  ] ;
+  sh:property [
+    sh:path ex:timestamp ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:dateTime ;
+  ] .
+
+# Defect 검증 규칙
+ex:DefectShape a sh:NodeShape ;
+  sh:targetClass ex:Defect ;
+  sh:property [
+    sh:path ex:defectCode ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+  ] ;
+  sh:property [
+    sh:path ex:defectCount ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:integer ;
+    sh:minInclusive 1 ;
+  ] .
+
+# Maintenance 검증 규칙
+ex:MaintenanceShape a sh:NodeShape ;
+  sh:targetClass ex:Maintenance ;
+  sh:property [
+    sh:path ex:maintenanceType ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:in ("preventive" "corrective" "predictive") ;
+  ] ;
+  sh:property [
+    sh:path ex:timestamp ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:dateTime ;
+  ] .
