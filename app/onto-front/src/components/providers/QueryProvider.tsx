@@ -1,6 +1,6 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { ReactNode, useState } from 'react';
 import type { ApiError } from '@/lib/api/client';
 
@@ -8,6 +8,34 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        queryCache: new QueryCache({
+          onError: (error) => {
+            // 전역 쿼리 에러 로깅
+            if (error instanceof Error && 'status' in error) {
+              const apiError = error as ApiError;
+              console.error(`API Error [${apiError.status}]:`, apiError.message);
+              if (apiError.details) {
+                console.error('Error details:', apiError.details);
+              }
+            } else if (error instanceof Error) {
+              // 네트워크 에러 등
+              console.error('Network or unknown error:', error.message);
+            } else {
+              console.error('Unknown error:', error);
+            }
+          },
+        }),
+        mutationCache: new MutationCache({
+          onError: (error) => {
+            // Mutation 에러 로깅
+            if (error instanceof Error && 'status' in error) {
+              const apiError = error as ApiError;
+              console.error(`Mutation Error [${apiError.status}]:`, apiError.message);
+            } else {
+              console.error('Mutation error:', error);
+            }
+          },
+        }),
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1분
@@ -28,21 +56,6 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
               // 5xx 에러는 최대 2번 재시도
               return failureCount < 2;
             },
-            onError: (error) => {
-              // 전역 에러 로깅
-              if (error instanceof Error && 'status' in error) {
-                const apiError = error as ApiError;
-                console.error(`API Error [${apiError.status}]:`, apiError.message);
-                if (apiError.details) {
-                  console.error('Error details:', apiError.details);
-                }
-              } else if (error instanceof Error) {
-                // 네트워크 에러 등
-                console.error('Network or unknown error:', error.message);
-              } else {
-                console.error('Unknown error:', error);
-              }
-            },
           },
           mutations: {
             retry: (failureCount, error) => {
@@ -54,15 +67,6 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
                 }
               }
               return failureCount < 1; // Mutation은 최대 1번만 재시도
-            },
-            onError: (error) => {
-              // Mutation 에러 로깅
-              if (error instanceof Error && 'status' in error) {
-                const apiError = error as ApiError;
-                console.error(`Mutation Error [${apiError.status}]:`, apiError.message);
-              } else {
-                console.error('Mutation error:', error);
-              }
             },
           },
         },
