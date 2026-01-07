@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone', // Docker용 standalone 빌드 활성화
   // API 프록시 설정
   async rewrites() {
     return [
