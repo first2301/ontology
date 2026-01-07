@@ -11,7 +11,7 @@ from datetime import datetime
 
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
-NEO4J_PASS = os.getenv("NEO4J_PASS", "password")
+NEO4J_PASS = os.getenv("NEO4J_PASS", "passwd")
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASS))
 app = FastAPI(title="Manufacturing Ontology API", version="2.0.0")
@@ -19,7 +19,7 @@ app = FastAPI(title="Manufacturing Ontology API", version="2.0.0")
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001", "http://localhost:80"],
+    allow_origins=["http://localhost:3001", "http://localhost:80", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

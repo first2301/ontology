@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manufacturing Ontology System</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/graph.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    
+    <!-- External Libraries -->
+  <script src="https://unpkg.com/cytoscape@3.28.0/dist/cytoscape.min.js"></script>
+    <!-- dagre layout plugins -->
+    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css">
+</head>
+<body x-data="app()" x-init="init()">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h1>🏭 Manufacturing Ontology</h1>
+        </div>
+        <div class="nav-menu">
+            <button @click="currentPage = 'graph'" 
+                    :class="{ active: currentPage === 'graph' }"
+                    class="nav-btn">
+                <i class="lucide lucide-network"></i> Graph View
+            </button>
+            <button @click="currentPage = 'dashboard'" 
+                    :class="{ active: currentPage === 'dashboard' }"
+                    class="nav-btn">
+                <i class="lucide lucide-bar-chart-3"></i> Dashboard
+            </button>
+            <button @click="currentPage = 'data-manager'" 
+                    :class="{ active: currentPage === 'data-manager' }"
+                    class="nav-btn">
+                <i class="lucide lucide-database"></i> Data Manager
+            </button>
+            <button @click="currentPage = 'relationship-editor'" 
+                    :class="{ active: currentPage === 'relationship-editor' }"
+                    class="nav-btn">
+                <i class="lucide lucide-link"></i> Relationship Editor
+            </button>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <div class="sidebar-header">
+            <button @click="sidebarCollapsed = !sidebarCollapsed" class="collapse-btn">
+                <i class="lucide" :class="sidebarCollapsed ? 'lucide-chevron-right' : 'lucide-chevron-left'"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content" x-show="!sidebarCollapsed">
+            <!-- Search -->
+            <div class="search-section">
+                <div class="search-box">
+                    <i class="lucide lucide-search"></i>
+                    <input type="text" x-model="searchQuery" placeholder="Search nodes..." @input="searchNodes()">
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-section">
+                <h3>Filters</h3>
+                <div class="filter-group">
+                    <label>Node Types:</label>
+                    <div class="checkbox-group">
+                        <label x-for="type in nodeTypes" :key="type">
+                            <input type="checkbox" :value="type" x-model="selectedTypes">
+                            <span x-text="type"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Relationship Types:</label>
+                    <div class="checkbox-group">
+                        <label x-for="rel in relationshipTypes" :key="rel">
+                            <input type="checkbox" :value="rel" x-model="selectedRelationships">
+                            <span x-text="rel"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-section">
+                <h3>Statistics</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Nodes:</span>
+                    <span class="stat-value" x-text="nodeCount"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Edges:</span>
+                    <span class="stat-value" x-text="edgeCount"></span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+        <!-- Graph View -->
+        <div x-show="currentPage === 'graph'" class="page-content">
+            <div class="page-header">
+                <h2>Ontology Graph Visualization</h2>
+                <div class="page-controls">
+                    <button @click="loadGraph()" class="btn btn-primary">
+                        <i class="lucide lucide-refresh-cw"></i> Reload
+                    </button>
+                    <select x-model="selectedLayout" @change="changeLayout()" class="select">
+                        <option value="cose">Force-directed</option>
+                        <option value="grid">Grid</option>
+                        <option value="hierarchical">Hierarchical</option>
+                        <option value="circle">Circle</option>
+                    </select>
+                    <input type="number" x-model="graphLimit" min="1" max="1000" class="input" placeholder="Limit">
+                </div>
+            </div>
+            
+            <div class="graph-container">
+                <div id="cy" class="graph-canvas"></div>
+                
+                <!-- Node Details Panel -->
+                <div x-show="selectedNode" class="details-panel">
+                    <div class="panel-header">
+                        <h3 x-text="selectedNode?.label || 'Node Details'"></h3>
+                        <button @click="selectedNode = null" class="close-btn">
+                            <i class="lucide lucide-x"></i>
+                        </button>
+                    </div>
+                    <div class="panel-content">
+                        <div x-show="selectedNode" class="node-info">
+                            <div class="info-item">
+                                <span class="label">ID:</span>
+                                <span class="value" x-text="selectedNode?.id"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Type:</span>
+                                <span class="value" x-text="selectedNode?.type"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Label:</span>
+                                <span class="value" x-text="selectedNode?.label"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div x-show="currentPage === 'dashboard'" class="page-content">
+            <div class="page-header">
+                <h2>Manufacturing Dashboard</h2>
+                <div class="page-controls">
+                    <button @click="refreshDashboard()" class="btn btn-primary">
+                        <i class="lucide lucide-refresh-cw"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon">
+                        <i class="lucide lucide-activity"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Equipment Efficiency</h3>
+                        <div class="kpi-value" x-text="dashboardData.efficiency || 'N/A'"></div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-icon">
+                        <i class="lucide lucide-check-circle"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Quality Rate</h3>
+                        <div class="kpi-value" x-text="dashboardData.qualityRate || 'N/A'"></div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-icon">
+                        <i class="lucide lucide-clock"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Active Orders</h3>
+                        <div class="kpi-value" x-text="dashboardData.activeOrders || 'N/A'"></div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-icon">
+                        <i class="lucide lucide-trending-up"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Production Trend</h3>
+                        <div class="kpi-value" x-text="dashboardData.productionTrend || 'N/A'"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Quality Trend</h3>
+                    <canvas id="qualityChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>Equipment Status</h3>
+                    <canvas id="equipmentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Manager -->
+        <div x-show="currentPage === 'data-manager'" class="page-content">
+            <div class="page-header">
+                <h2>Data Management</h2>
+            </div>
+            
+            <div class="upload-section">
+                <div class="upload-area" 
+                     @dragover.prevent
+                     @drop.prevent="handleFileDrop($event)"
+                     :class="{ 'drag-over': isDragOver }">
+                    <i class="lucide lucide-upload"></i>
+                    <h3>Upload Ontology Files</h3>
+                    <p>Drag and drop TTL files here or click to browse</p>
+                    <input type="file" @change="handleFileSelect($event)" multiple accept=".ttl,.owl,.rdf" class="file-input">
+                </div>
+                
+                <div class="upload-progress" x-show="uploadProgress > 0">
+                    <div class="progress-bar">
+                        <div class="progress-fill" :style="`width: ${uploadProgress}%`"></div>
+                    </div>
+                    <span x-text="`${uploadProgress}%`"></span>
+                </div>
+            </div>
+            
+            <div class="file-history">
+                <h3>Upload History</h3>
+                <div class="history-list">
+                    <div x-for="file in uploadHistory" :key="file.id" class="history-item">
+                        <div class="file-info">
+                            <span class="file-name" x-text="file.name"></span>
+                            <span class="file-status" :class="file.status" x-text="file.status"></span>
+                        </div>
+                        <div class="file-details">
+                            <span x-text="file.triplesLoaded + ' triples loaded'"></span>
+                            <span x-text="file.timestamp"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Relationship Editor -->
+        <div x-show="currentPage === 'relationship-editor'" class="page-content">
+            <div class="page-header">
+                <h2>Relationship Editor</h2>
+                <div class="page-controls">
+                    <button @click="showAddForm = !showAddForm" class="btn btn-primary">
+                        <i class="lucide lucide-plus"></i> Add Relationship
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Add Relationship Form -->
+            <div x-show="showAddForm" class="add-form">
+                <h3>Add New Relationship</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Subject:</label>
+                        <input type="text" x-model="newTriple.subject" placeholder="ex:Equipment001" class="input">
+                    </div>
+                    <div class="form-group">
+                        <label>Predicate:</label>
+                        <select x-model="newTriple.predicate" class="select">
+                            <option value="">Select relationship type</option>
+                            <option value="partOf">partOf</option>
+                            <option value="measures">measures</option>
+                            <option value="locatedIn">locatedIn</option>
+                            <option value="executedBy">executedBy</option>
+                            <option value="hasQuality">hasQuality</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Object:</label>
+                        <input type="text" x-model="newTriple.object" placeholder="ex:AreaA" class="input">
+                    </div>
+                    <div class="form-group">
+                        <button @click="addTriple()" class="btn btn-success">
+                            <i class="lucide lucide-plus"></i> Add
+                        </button>
+                        <button @click="showAddForm = false" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Relationship List -->
+            <div class="relationship-list">
+                <h3>Existing Relationships</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Predicate</th>
+                                <th>Object</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr x-for="triple in relationships" :key="triple.subject + triple.predicate + triple.object">
+                                <td x-text="triple.subject_label || triple.subject"></td>
+                                <td x-text="triple.predicate"></td>
+                                <td x-text="triple.object_label || triple.object"></td>
+                                <td>
+                                    <button @click="deleteTriple(triple)" class="btn btn-danger btn-sm">
+                                        <i class="lucide lucide-trash-2"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container">
+        <div x-for="toast in toasts" :key="toast.id" 
+             class="toast" 
+             :class="toast.type"
+             x-show="toast.show"
+             x-transition>
+            <div class="toast-content">
+                <i class="lucide" :class="toast.icon"></i>
+                <span x-text="toast.message"></span>
+            </div>
+            <button @click="removeToast(toast.id)" class="toast-close">
+                <i class="lucide lucide-x"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div x-show="loading" class="loading-overlay">
+        <div class="spinner"></div>
+  </div>
+
+    <!-- JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/relationship.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Alpine store bootstrap for safer loading state handling -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            if (!Alpine.store('app')) {
+                Alpine.store('app', {
+                    loading: false,
+                    nodeTypes: [],
+                    relationshipTypes: []
+                });
+            }
+        });
+    </script>
+    
+    <!-- 디버깅 스크립트 -->
+  <script>
+        console.log('Scripts loaded. Checking global objects...');
+        console.log('window.utils:', typeof window.utils);
+        console.log('window.api:', typeof window.api);
+        console.log('window.graphManager:', typeof window.graphManager);
+        console.log('window.dashboardManager:', typeof window.dashboardManager);
+        console.log('window.relationshipManager:', typeof window.relationshipManager);
+        console.log('window.app:', typeof window.app);
+        
+        // API 연결 테스트
+        if (window.api) {
+            console.log('Testing API connection...');
+            window.api.ontology.getGraphElements(10)
+                .then(data => {
+                    console.log('API test successful:', data);
+                })
+                .catch(error => {
+                    console.error('API test failed:', error);
+                });
+        }
+  </script>
+</body>
+</html>
