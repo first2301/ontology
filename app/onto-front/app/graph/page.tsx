@@ -75,12 +75,14 @@ export default function GraphPage() {
   return (
     <MainLayout showSidebar sidebarProps={sidebarProps}>
       <div className="flex h-full flex-col">
-        <div className="border-b border-gray-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Ontology Graph Visualization
-            </h2>
-            <GraphControls onReload={() => refetch()} />
+        <div className="border-b border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm">
+          <div className="mx-auto max-w-7xl px-4 py-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Ontology Graph Visualization
+              </h2>
+              <GraphControls onReload={() => refetch()} />
+            </div>
           </div>
         </div>
         <div className="relative flex-1">

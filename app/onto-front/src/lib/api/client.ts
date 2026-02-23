@@ -34,8 +34,16 @@ export class HttpClient {
       ...options,
     };
 
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/c0341dfc-3427-4fbf-87e7-6341311978e6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:28',message:'API request start',data:{url,method:config.method||'GET',baseURL:this.baseURL,endpoint},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+
     try {
       const response = await fetch(url, config);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7246/ingest/c0341dfc-3427-4fbf-87e7-6341311978e6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:40',message:'API response received',data:{status:response.status,statusText:response.statusText,ok:response.ok,url:response.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
 
       if (!response.ok) {
         // 에러 응답 본문 읽기 시도
@@ -65,6 +73,10 @@ export class HttpClient {
           console.warn('Failed to parse error response:', parseError);
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/c0341dfc-3427-4fbf-87e7-6341311978e6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:68',message:'API error response',data:{status:response.status,statusText:response.statusText,errorMessage,errorDetails},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
+        // #endregion
+        
         throw new ApiError(
           errorMessage,
           response.status,
@@ -80,6 +92,11 @@ export class HttpClient {
 
       return (await response.text()) as T;
     } catch (error) {
+      // #region agent log
+      const err = error instanceof Error ? error : new Error(String(error));
+      fetch('http://127.0.0.1:7246/ingest/c0341dfc-3427-4fbf-87e7-6341311978e6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:82',message:'API request exception',data:{errorType:err.constructor?.name,errorMessage:err.message,errorCause:err.cause!= null?String(err.cause):undefined,url,baseURL:this.baseURL},timestamp:Date.now(),runId:'run1',hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
+      // #endregion
+      
       // ApiError는 그대로 전달
       if (error instanceof ApiError) {
         throw error;

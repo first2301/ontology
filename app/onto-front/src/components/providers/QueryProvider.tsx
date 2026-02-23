@@ -14,12 +14,16 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
             if (error instanceof Error && 'status' in error) {
               const apiError = error as ApiError;
               console.error(`API Error [${apiError.status}]:`, apiError.message);
+              console.error('Error statusText:', apiError.statusText);
               if (apiError.details) {
                 console.error('Error details:', apiError.details);
               }
+              // 전체 에러 객체 로깅
+              console.error('Full error object:', apiError);
             } else if (error instanceof Error) {
               // 네트워크 에러 등
               console.error('Network or unknown error:', error.message);
+              console.error('Full error:', error);
             } else {
               console.error('Unknown error:', error);
             }
@@ -31,8 +35,14 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
             if (error instanceof Error && 'status' in error) {
               const apiError = error as ApiError;
               console.error(`Mutation Error [${apiError.status}]:`, apiError.message);
+              console.error('Error statusText:', apiError.statusText);
+              if (apiError.details) {
+                console.error('Error details:', apiError.details);
+              }
+              console.error('Full error object:', apiError);
             } else {
               console.error('Mutation error:', error);
+              console.error('Full error:', error);
             }
           },
         }),

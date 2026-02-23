@@ -1,10 +1,18 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { analyticsAPI, manufacturingAPI } from '@/lib/api';
+import { analyticsAPI, manufacturingAPI, ontologyAPI } from '@/lib/api';
 import type { DashboardData, QualityTrendData, EquipmentStatusData } from '@/types/manufacturing';
+import type { TripleResponse } from '@/types/api';
 
 export function useDashboard() {
+  // 온톨로지 관계 정보
+  const triplesQuery = useQuery({
+    queryKey: ['triples'],
+    queryFn: () => ontologyAPI.getTriples(),
+    retry: false,
+  });
+
   // 품질 트렌드
   const qualityTrendQuery = useQuery({
     queryKey: ['quality-trend', '7d'],
@@ -102,23 +110,54 @@ export function useDashboard() {
     };
   };
 
+  /**
+   * 온톨로지 관계 정보 통계 계산
+   */
+  const processOntologyRelations = () => {
+    const triples = triplesQuery.data?.triples || [];
+    const totalRelations = triples.length;
+
+    // 관계 타입별 개수 계산
+    const predicateCounts: Record<string, number> = {};
+    triples.forEach((triple) => {
+      const predicate = triple.predicate;
+      predicateCounts[predicate] = (predicateCounts[predicate] || 0) + 1;
+    });
+
+    // 관계 타입별 개수를 배열로 변환하고 정렬
+    const predicateStats = Object.entries(predicateCounts)
+      .map(([predicate, count]) => ({ predicate, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5); // 상위 5개만
+
+    return {
+      totalRelations,
+      predicateStats,
+      triples: triples as TripleResponse[],
+    };
+  };
+
   const isLoading =
+    triplesQuery.isLoading ||
     qualityTrendQuery.isLoading ||
     workOrdersQuery.isLoading ||
     manufacturingLinesQuery.isLoading;
 
   const error =
+    triplesQuery.error ||
     qualityTrendQuery.error ||
     workOrdersQuery.error ||
     manufacturingLinesQuery.error;
 
   return {
+    ontologyRelations: processOntologyRelations(),
     dashboardData: processDashboardData(),
     qualityTrendData: processQualityTrend(),
     equipmentStatusData: processEquipmentStatus(),
     isLoading,
     error,
     refetch: () => {
+      triplesQuery.refetch();
       qualityTrendQuery.refetch();
       workOrdersQuery.refetch();
       manufacturingLinesQuery.refetch();

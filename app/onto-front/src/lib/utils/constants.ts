@@ -1,6 +1,7 @@
 // 상수 정의
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || '/api';
+// 로컬 테스트용: 직접 백엔드 URL 사용
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 export const API_FULL_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
 export const GRAPH_LAYOUTS = {

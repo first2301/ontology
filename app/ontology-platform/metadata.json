@@ -1,0 +1,5 @@
+{
+  "name": "Smart-MES Optimizer & Ontology Platform",
+  "description": "An advanced industrial data analysis platform that utilizes AutoML and Ontology mapping to recommend prioritized MES functions based on manufacturing process data.",
+  "requestFramePermissions": []
+}

@@ -109,11 +109,11 @@ export default function FileUpload({ onUploadSuccess, onGraphRefresh }: FileUplo
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+        className={`relative rounded-lg border-2 border-dashed p-12 text-center transition-all duration-300 ${
           isDragOver
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 bg-gray-50 hover:border-gray-400'
-        }`}
+            ? 'border-blue-500 bg-blue-50/50 scale-[1.02] shadow-lg'
+            : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-gray-100/50'
+        } ${isUploading ? 'pointer-events-none opacity-60' : ''}`}
         role="button"
         tabIndex={0}
         aria-label="File upload area"
@@ -124,12 +124,16 @@ export default function FileUpload({ onUploadSuccess, onGraphRefresh }: FileUplo
           }
         }}
       >
-        <Upload className="mx-auto h-12 w-12 text-gray-400" />
+        <div className={`transition-transform duration-300 ${isDragOver ? 'scale-110' : ''}`}>
+          <Upload className={`mx-auto h-16 w-16 transition-colors ${
+            isDragOver ? 'text-blue-600' : 'text-gray-400'
+          }`} />
+        </div>
         <h3 className="mt-4 text-lg font-semibold text-gray-900">
           Upload Ontology Files
         </h3>
         <p className="mt-2 text-sm text-gray-600">
-          Drag and drop TTL files here or click to browse
+          Drag and drop TTL, OWL, or RDF files here or click to browse
         </p>
         <input
           ref={fileInputRef}
@@ -138,29 +142,39 @@ export default function FileUpload({ onUploadSuccess, onGraphRefresh }: FileUplo
           multiple
           accept=".ttl,.owl,.rdf"
           className="hidden"
+          disabled={isUploading}
         />
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="mt-6 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
           aria-label="Select files to upload"
         >
-          Select Files
+          {isUploading ? 'Uploading...' : 'Select Files'}
         </button>
       </div>
 
       {uploadProgress > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Uploading...</span>
-            <span className="font-medium text-gray-900">{Math.round(uploadProgress)}%</span>
+            <span className="font-medium text-gray-700">Uploading...</span>
+            <span className="font-semibold text-gray-900">{Math.round(uploadProgress)}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+          <div className="h-2.5 overflow-hidden rounded-full bg-gray-200">
             <div
-              className="h-full bg-blue-600 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 ease-out shadow-sm"
               style={{ width: `${uploadProgress}%` }}
-            />
+            >
+              {uploadProgress === 100 && (
+                <div className="h-full w-full bg-green-500 animate-pulse" />
+              )}
+            </div>
           </div>
+          {uploadProgress === 100 && (
+            <p className="text-xs text-green-600 font-medium text-center animate-fade-in">
+              Upload completed successfully!
+            </p>
+          )}
         </div>
       )}
     </div>

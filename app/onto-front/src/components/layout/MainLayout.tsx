@@ -35,7 +35,9 @@ export default function MainLayout({
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         {showSidebar && sidebarProps && <Sidebar {...sidebarProps} />}
-        <main className="flex-1 overflow-y-auto bg-gray-50">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 via-white to-gray-50">
+          {children}
+        </main>
       </div>
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>

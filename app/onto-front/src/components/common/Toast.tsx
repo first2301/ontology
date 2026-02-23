@@ -45,13 +45,16 @@ export default function ToastComponent({ toast, onClose }: ToastProps) {
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg border p-4 shadow-lg ${style}`}
+      className={`flex items-center gap-3 rounded-lg border p-4 shadow-lg animate-scale-in transition-all duration-300 hover:shadow-xl ${style}`}
+      role="alert"
+      aria-live="polite"
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
       <button
         onClick={() => onClose(toast.id)}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+        className="flex-shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        aria-label="Close notification"
       >
         <X className="h-4 w-4" />
       </button>
@@ -68,9 +71,19 @@ export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-      {toasts.map((toast) => (
-        <ToastComponent key={toast.id} toast={toast} onClose={onClose} />
+    <div 
+      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full sm:max-w-md"
+      aria-live="polite"
+      aria-label="Notifications"
+    >
+      {toasts.map((toast, index) => (
+        <div
+          key={toast.id}
+          className="animate-scale-in"
+          style={{ animationDelay: `${index * 50}ms` }}
+        >
+          <ToastComponent toast={toast} onClose={onClose} />
+        </div>
       ))}
     </div>
   );

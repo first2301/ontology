@@ -22,33 +22,33 @@ export default function RelationshipPage() {
   return (
     <MainLayout>
       <div className="flex h-full flex-col">
-        <div className="border-b border-gray-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Relationship Editor</h2>
-            <TripleForm onSuccess={() => refetch()} />
+        <div className="border-b border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm">
+          <div className="mx-auto max-w-7xl px-4 py-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Relationship Editor</h2>
+              <TripleForm onSuccess={() => refetch()} />
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          {isLoading ? (
-            <div className="mx-auto max-w-6xl">
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-6xl p-6">
+            {isLoading ? (
               <div className="mb-6">
                 <Skeleton variant="text" width="200px" height={28} className="mb-4" />
                 <TableSkeleton rows={5} columns={4} />
               </div>
-            </div>
-          ) : error ? (
-            <ErrorDisplay error={error} onRetry={() => refetch()} title="Failed to load relationships" />
-          ) : (
-            <div className="mx-auto max-w-6xl">
+            ) : error ? (
+              <ErrorDisplay error={error} onRetry={() => refetch()} title="Failed to load relationships" />
+            ) : (
               <div className="mb-6">
                 <h3 className="mb-4 text-lg font-semibold text-gray-900">
                   Existing Relationships
                 </h3>
                 <TripleTable triples={triples} onDelete={() => refetch()} />
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </MainLayout>

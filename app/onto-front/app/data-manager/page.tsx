@@ -25,12 +25,14 @@ export default function DataManagerPage() {
   return (
     <MainLayout>
       <div className="flex h-full flex-col">
-        <div className="border-b border-gray-200 bg-white p-4">
-          <h2 className="text-2xl font-bold text-gray-900">Data Management</h2>
+        <div className="border-b border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm">
+          <div className="mx-auto max-w-7xl px-4 py-4">
+            <h2 className="text-2xl font-bold text-gray-900">Data Management</h2>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-4xl space-y-6">
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-4xl p-6 space-y-6">
             <FileUpload onUploadSuccess={handleUploadSuccess} onGraphRefresh={handleGraphRefresh} />
             <UploadHistory history={uploadHistory} />
           </div>
