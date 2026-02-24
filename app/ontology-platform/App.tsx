@@ -713,6 +713,13 @@ const App: React.FC = () => {
                             <OntologyVisualizer
                               embedded
                               highlightedFunctionIds={analysisResult.matches.map((m) => m.functionId)}
+                              templates={[
+                                {
+                                  id: 'result-current',
+                                  name: '기본 결과 템플릿',
+                                  recommendedFunctionIds: analysisResult.matches.map((m) => m.functionId),
+                                },
+                              ]}
                             />
                           )}
                         </div>

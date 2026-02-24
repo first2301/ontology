@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { MES_ONTOLOGY, ONTOLOGY_SECTION_DESCRIPTION_KO } from '../constants';
-import { MESFunction } from '../types';
+import { MESFunction, ResultTemplate } from '../types';
 import OntologyGraph from './OntologyGraph';
 import {
   Network,
@@ -46,9 +46,11 @@ interface OntologyVisualizerProps {
   embedded?: boolean;
   /** 분석 결과로 매칭된 기능 ID 목록. 리스트/그래프에서 해당 항목을 강조 표시합니다. */
   highlightedFunctionIds?: string[];
+  /** L3 결과 템플릿 목록. 그래프 뷰에서 템플릿 노드 및 Template→L2 엣지를 표시합니다. */
+  templates?: ResultTemplate[];
 }
 
-const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = false, highlightedFunctionIds }) => {
+const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = false, highlightedFunctionIds, templates }) => {
   const [selectedFunction, setSelectedFunction] = useState<MESFunction | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
@@ -104,6 +106,7 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
           onSelectFunction={setSelectedFunction}
           height={embedded ? 320 : 420}
           highlightedIds={highlightedFunctionIds}
+          templates={templates}
         />
       )}
 

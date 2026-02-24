@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { MES_ONTOLOGY } from '../constants';
-import { MESFunction } from '../types';
+import { MESFunction, ResultTemplate } from '../types';
 import {
   Network,
   Database,
@@ -22,6 +22,7 @@ import {
   Settings,
   Package,
   Activity,
+  LayoutTemplate,
 } from 'lucide-react';
 
 const CATEGORY_ORDER = ['Tracking', 'Quality', 'Maintenance', 'Inventory', 'Production'] as const;
@@ -135,14 +136,34 @@ function FunctionNode({ data, selected }: NodeProps<{ label: string; id: string;
   );
 }
 
+/** L3 템플릿 노드: 결과 탭 하나에 대응. 추천 L2 기능으로 엣지 연결 */
+function TemplateNode({ data }: NodeProps<{ label: string; templateId: string }>) {
+  return (
+    <div
+      className="relative w-[4rem] h-[4rem] rounded-full bg-white border-2 border-violet-300 shadow-md ring-1 ring-violet-200 flex flex-col items-center justify-center"
+      title={data.label}
+    >
+      <Handle type="source" position={Position.Bottom} className="!w-0 !h-0 !min-w-0 !min-h-0 !border-0 !opacity-0" />
+      <LayoutTemplate className="w-4 h-4 text-violet-500 shrink-0 mb-0.5" />
+      <span className="absolute -top-0.5 right-0.5 text-[8px] font-medium text-slate-400 bg-slate-100 rounded px-1">L3</span>
+      <span className="text-[10px] font-semibold text-slate-800 leading-tight truncate max-w-[95%] px-0.5 text-center">{data.label}</span>
+    </div>
+  );
+}
+
 const nodeTypes: NodeTypes = {
   root: RootNode,
   category: CategoryNode,
   function: FunctionNode,
+  template: TemplateNode,
 };
 
-/** 방사형(원형) 레이아웃: 중앙 루트 → 1링 카테고리 → 2링 기능. highlightedIds에 포함된 기능 노드는 매칭 강조용 데이터 추가 */
-function buildGraphElements(ontology: MESFunction[], highlightedIds?: string[]): { nodes: Node[]; edges: Edge[] } {
+/** 방사형(원형) 레이아웃: 중앙 루트 → 1링 카테고리 → 2링 기능 → 3링 템플릿(선택). highlightedIds에 포함된 기능 노드는 매칭 강조, templates가 있으면 L3 노드 및 Template→L2 엣지 추가 */
+function buildGraphElements(
+  ontology: MESFunction[],
+  highlightedIds?: string[],
+  templates?: ResultTemplate[]
+): { nodes: Node[]; edges: Edge[] } {
   const byCategory = groupByCategory(ontology);
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -152,6 +173,7 @@ function buildGraphElements(ontology: MESFunction[], highlightedIds?: string[]):
   const cy = 240;
   const R1 = 130; // 카테고리 반지름
   const R2 = 240; // 기능 반지름
+  const R3 = 340; // L3 템플릿 반지름
   const FUN_SPREAD_DEG = 22; // 같은 카테고리 내 기능 간 각도
 
   // 루트 노드 (중앙)
@@ -242,6 +264,37 @@ function buildGraphElements(ontology: MESFunction[], highlightedIds?: string[]):
     });
   });
 
+  // L3 템플릿: 3링에 배치, 각 템플릿 → recommendedFunctionIds 인 L2 노드로 엣지
+  const templateList = templates?.length ? templates : [];
+  templateList.forEach((tpl, tplIdx) => {
+    const tplId = `template-${tpl.id}`;
+    const numTpl = templateList.length;
+    const angle = numTpl === 1
+      ? (90 * Math.PI) / 180
+      : (-90 + (tplIdx * 360) / numTpl) * (Math.PI / 180);
+    const tx = cx + R3 * Math.cos(angle);
+    const ty = cy + R3 * Math.sin(angle);
+
+    nodes.push({
+      id: tplId,
+      type: 'template',
+      position: { x: tx - 32, y: ty - 32 },
+      data: { label: tpl.name, templateId: tpl.id },
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
+    });
+
+    tpl.recommendedFunctionIds.forEach((fid) => {
+      edges.push({
+        id: `e-${tplId}-${fid}`,
+        source: tplId,
+        target: fid,
+        type: 'straight',
+        style: { stroke: '#8b5cf6', strokeWidth: 1.5, strokeDasharray: '4 2' },
+      });
+    });
+  });
+
   return { nodes, edges };
 }
 
@@ -252,6 +305,8 @@ export interface OntologyGraphProps {
   height?: number;
   /** 분석 결과로 매칭된 기능 ID 목록. 해당 노드를 강조 표시합니다. */
   highlightedIds?: string[];
+  /** L3 결과 템플릿 목록. 있으면 3링에 템플릿 노드 및 Template→L2 엣지를 추가합니다. */
+  templates?: ResultTemplate[];
 }
 
 /**
@@ -262,10 +317,11 @@ const OntologyGraph: React.FC<OntologyGraphProps> = ({
   onSelectFunction,
   height = 420,
   highlightedIds,
+  templates,
 }) => {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => buildGraphElements(MES_ONTOLOGY, highlightedIds),
-    [highlightedIds]
+    () => buildGraphElements(MES_ONTOLOGY, highlightedIds, templates),
+    [highlightedIds, templates]
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -285,12 +341,13 @@ const OntologyGraph: React.FC<OntologyGraphProps> = ({
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-white/80">
         <div>
           <h3 className="text-sm font-semibold text-slate-800">Ontology Structure</h3>
-          <p className="text-[10px] text-slate-500 mt-0.5">L0 Root · L1 Domain · L2 Function</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">L0 Root · L1 Domain · L2 Function · L3 Template</p>
         </div>
         <div className="flex items-center gap-3 text-[10px] text-slate-500">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-700" /> Root</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white border border-slate-300" /> Domain</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white border border-slate-200" /> Function</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white border border-violet-300" /> Template</span>
         </div>
       </div>
       <div className="relative" style={{ height: height - 52 }}>

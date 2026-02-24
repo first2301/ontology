@@ -40,6 +40,14 @@ export interface MatchingResult {
   priority: number; // 1-5
 }
 
+/** 결과 탭 하나를 나타내는 템플릿. L3 계층 노드 및 추천 L2 기능 연결용 */
+export interface ResultTemplate {
+  id: string;
+  name: string;
+  /** 매칭된 L2 기능 ID 목록 (Template → Function 엣지에 사용) */
+  recommendedFunctionIds: string[];
+}
+
 export interface RecommendationReport {
   timestamp: string;
   industry: IndustryType;
