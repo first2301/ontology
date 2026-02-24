@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Info, X, Menu } from 'lucide-react';
+import { Info, X, Menu } from 'lucide-react';
 
 const HELP_STEPS = [
   '산업을 선택하고, 필요 시 공정 데이터를 업로드합니다.',
@@ -32,17 +32,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuClick, helpOpen
           >
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="bg-indigo-600 p-1.5 rounded-lg hidden lg:block" aria-hidden>
-              <Cpu className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-black tracking-tighter">
-                MES<span className="text-indigo-400">OPTIMIZER</span>
-              </h1>
-              <p className="text-[10px] text-slate-400 hidden sm:block">Smart MES Selection Platform</p>
-            </div>
-          </div>
+          <p className="text-xs sm:text-sm lg:text-base text-slate-300 font-medium tracking-tight">
+            Smart MES Selection Platform
+          </p>
         </div>
         <button
           type="button"
