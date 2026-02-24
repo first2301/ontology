@@ -44,6 +44,9 @@ const FUNCTION_SHORT: Record<string, string> = {
   F004: 'Schedule',
   F005: 'Trace',
   F006: 'NCM',
+  F007: 'POM',
+  F008: 'MaintSched',
+  F009: 'Material',
 };
 
 function groupByCategory(ontology: MESFunction[]): Map<string, MESFunction[]> {

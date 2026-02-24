@@ -53,6 +53,30 @@ export const MES_ONTOLOGY: MESFunction[] = [
     description: 'Systematically handles defects and deviations in the manufacturing process.',
     descriptionKo: '불량·편차를 체계적으로 관리하고 이력화합니다.',
     standard: 'ISO 9001'
+  },
+  {
+    id: 'F007',
+    category: 'Production',
+    name: 'Production Order Management',
+    description: 'Manages production order release, progress, and completion, linking work orders with actuals.',
+    descriptionKo: '생산 오더 배분·진행·완료를 관리하고, 작업 지시와 실적을 연동합니다.',
+    standard: 'ISA-95'
+  },
+  {
+    id: 'F008',
+    category: 'Maintenance',
+    name: 'Maintenance Scheduling',
+    description: 'Allocates maintenance schedules, labor, and materials; plans equipment availability and periodic inspections.',
+    descriptionKo: '보전 일정·인력·자재를 할당하고, 설비 가동률과 정기 점검을 계획합니다.',
+    standard: 'ISA-95'
+  },
+  {
+    id: 'F009',
+    category: 'Tracking',
+    name: 'Material Consumption Tracking',
+    description: 'Tracks material and energy consumption in real time and manages lot/batch-level history.',
+    descriptionKo: '자재·에너지 소비량을 실시간 추적하고, Lot/배치 단위 이력을 관리합니다.',
+    standard: 'ISA-95'
   }
 ];
 
@@ -121,5 +145,35 @@ export const REFERENCE_TEMPLATES: ResultTemplate[] = [
     preprocessingMethods: ['StandardScaler', '결측치 보간', '이상치 제거', '시계열 윈도우'],
     visualizationMethods: ['특성 추세', '잔차 플롯', '실제 vs 예측'],
     dataUsageSummary: '설비 센서 데이터 45,000건 (15개 채널, 1분 간격, 약 2일치). 진동·온도·전류 등 12개 특징 사용. 고장 라벨 320건 포함, 24시간 전 예측 타깃으로 활용.',
+  },
+  {
+    id: 'ref-pom',
+    name: '참조: 생산 오더 관리 분석',
+    recommendedFunctionIds: ['F007'],
+    summary: '생산 오더·작업 지시·실적 데이터 기반 일정 대비 달성률 및 병목 분석 템플릿입니다.',
+    modelName: 'XGBoost',
+    preprocessingMethods: ['StandardScaler', '결측치 보간', '이상치 제거', '시간 윈도우 집계'],
+    visualizationMethods: ['간트 차트', '실적 vs 계획 대비', '산점도'],
+    dataUsageSummary: '생산 오더 3,200건 (2024.03~2024.05), 6개 변수(오더ID·품목·수량·계획시작/종료·실적시작/종료). 작업장별 8:2 분할, 지연 여부 이진 라벨 포함.',
+  },
+  {
+    id: 'ref-maint',
+    name: '참조: 보전 일정 분석',
+    recommendedFunctionIds: ['F008'],
+    summary: '보전 일정·설비 가동·점검 이력 데이터 기반 유지보수 효율 및 리소스 활용 분석 템플릿입니다.',
+    modelName: 'LightGBM',
+    preprocessingMethods: ['StandardScaler', '결측치 제거', '날짜/주기 인코딩', '카테고리 원핫'],
+    visualizationMethods: ['캘린더 히트맵', '설비별 가동률', '막대/라인 차트'],
+    dataUsageSummary: '보전 이력 5,800건 (약 6개월), 7개 변수(설비ID·일정·유형·소요시간·담당·부품·비용). 설비 42대, 정기/수시 구분 라벨.',
+  },
+  {
+    id: 'ref-material',
+    name: '참조: 자재 소비 추적 분석',
+    recommendedFunctionIds: ['F009'],
+    summary: '자재·에너지 소비 및 Lot 이력 데이터 기반 사용량 추세와 이상 탐지 분석 템플릿입니다.',
+    modelName: 'RandomForest',
+    preprocessingMethods: ['StandardScaler', '결측치 보간', '이상치 IQR', '롤링 평균'],
+    visualizationMethods: ['시계열 추세', 'Lot별 소비량', '실제 vs 예측'],
+    dataUsageSummary: '자재 소비 이력 18,200건 (2024.01~2024.04), 9개 변수(Lot·자재코드·수량·단위·작업장·시각 등). 품목 120종, 배치 단위 집계 적용.',
   },
 ];
