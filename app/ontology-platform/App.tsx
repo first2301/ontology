@@ -292,6 +292,14 @@ const App: React.FC = () => {
                           .map((m) => m.functionId),
                         summary: analysisResult.summary,
                         modelName: automlResult?.best_model,
+                        modelPerformance:
+                          automlResult?.best_model != null && Number.isFinite(automlResult?.best_score)
+                            ? {
+                                accuracy: automlResult.best_score,
+                                f1Score: automlResult.best_score,
+                                trainingTime: undefined,
+                              }
+                            : undefined,
                         preprocessingMethods: automlResult?.preprocessing_methods,
                         visualizationMethods: automlResult?.visualization_methods,
                         dataUsageSummary: buildDataUsageSummary(dataProfile, industry),
@@ -767,6 +775,14 @@ const App: React.FC = () => {
                                     .map((m) => m.functionId),
                                   summary: analysisResult.summary,
                                   modelName: automlResult?.best_model,
+                                  modelPerformance:
+                                    automlResult?.best_model != null && Number.isFinite(automlResult?.best_score)
+                                      ? {
+                                          accuracy: automlResult.best_score,
+                                          f1Score: automlResult.best_score,
+                                          trainingTime: undefined,
+                                        }
+                                      : undefined,
                                   preprocessingMethods: automlResult?.preprocessing_methods,
                                   visualizationMethods: automlResult?.visualization_methods,
                                   dataUsageSummary: buildDataUsageSummary(dataProfile, industry),
