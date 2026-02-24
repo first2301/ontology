@@ -268,6 +268,33 @@ const App: React.FC = () => {
           <div key="ontology" className="p-4 sm:p-6 lg:p-8">
             <OntologyVisualizer
               highlightedFunctionIds={analysisResult?.matches.map((m) => m.functionId)}
+              templates={
+                analysisResult
+                  ? [
+                      {
+                        id: 'result-current',
+                        name: '기본 결과 템플릿',
+                        recommendedFunctionIds: [...analysisResult.matches]
+                          .sort((a, b) => b.score - a.score)
+                          .slice(0, 1)
+                          .map((m) => m.functionId),
+                        summary: analysisResult.summary,
+                      },
+                    ]
+                  : undefined
+              }
+              resultSummary={
+                analysisResult
+                  ? (() => {
+                      const top = [...analysisResult.matches].sort((a, b) => b.score - a.score)[0];
+                      const topFn = top ? MES_ONTOLOGY.find((o) => o.id === top.functionId) : null;
+                      return {
+                        summary: analysisResult.summary,
+                        topMatchName: topFn?.name,
+                      };
+                    })()
+                  : undefined
+              }
             />
           </div>
         )}
@@ -721,8 +748,16 @@ const App: React.FC = () => {
                                     .sort((a, b) => b.score - a.score)
                                     .slice(0, 1)
                                     .map((m) => m.functionId),
+                                  summary: analysisResult.summary,
                                 },
                               ]}
+                              resultSummary={{
+                                summary: analysisResult.summary,
+                                topMatchName: (() => {
+                                  const top = [...analysisResult.matches].sort((a, b) => b.score - a.score)[0];
+                                  return top ? MES_ONTOLOGY.find((o) => o.id === top.functionId)?.name : undefined;
+                                })(),
+                              }}
                             />
                           )}
                         </div>

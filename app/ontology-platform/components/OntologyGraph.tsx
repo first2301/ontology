@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { MES_ONTOLOGY } from '../constants';
-import { MESFunction, ResultTemplate } from '../types';
+import { MESFunction, ResultTemplate, OntologySelectedNode } from '../types';
 import {
   Network,
   Database,
@@ -84,10 +84,10 @@ function oppositePosition(p: Position): Position {
   return Position.Left;
 }
 
-/** 루트 노드: 중앙 원형 (L0, 전문적 시각) */
+/** 루트 노드: 중앙 원형 (L0, 전문적 시각). 클릭 시 메타 패널 표시 */
 function RootNode({ data }: NodeProps<{ label: string }>) {
   return (
-    <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-700 text-white shadow-xl shadow-slate-900/20 ring-2 ring-slate-600/50 flex flex-col items-center justify-center">
+    <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-700 text-white shadow-xl shadow-slate-900/20 ring-2 ring-slate-600/50 flex flex-col items-center justify-center cursor-pointer">
       <Handle type="source" position={Position.Bottom} className="!w-0 !h-0 !min-w-0 !min-h-0 !border-0 !opacity-0" />
       <Database className="w-5 h-5 text-indigo-300 mb-0.5 shrink-0" />
       <span className="font-bold text-xs leading-tight px-0.5 text-center tracking-tight">{data.label}</span>
@@ -96,13 +96,13 @@ function RootNode({ data }: NodeProps<{ label: string }>) {
   );
 }
 
-/** 카테고리 노드: 원형, L1 도메인 (전문적 시각) */
-function CategoryNode({ data }: NodeProps<{ label: string; category: string; shortLabel?: string; targetPos?: Position; sourcePos?: Position }>) {
+/** 카테고리 노드: 원형, L1 도메인 (전문적 시각). data.functionIds는 클릭 시 패널용 */
+function CategoryNode({ data }: NodeProps<{ label: string; category: string; shortLabel?: string; targetPos?: Position; sourcePos?: Position; functionIds?: string[] }>) {
   const target = data.targetPos ?? Position.Top;
   const source = data.sourcePos ?? Position.Bottom;
   const label = data.shortLabel ?? data.label;
   return (
-    <div className="relative w-[4.5rem] h-[4.5rem] rounded-full bg-white border-2 border-slate-300 shadow-md shadow-slate-200 ring-1 ring-slate-200 flex flex-col items-center justify-center" title={data.label}>
+    <div className="relative w-[4.5rem] h-[4.5rem] rounded-full bg-white border-2 border-slate-300 shadow-md shadow-slate-200 ring-1 ring-slate-200 flex flex-col items-center justify-center cursor-pointer" title={data.label}>
       <Handle type="target" position={target} className="!w-0 !h-0 !min-w-0 !min-h-0 !border-0 !opacity-0" />
       <Handle type="source" position={source} className="!w-0 !h-0 !min-w-0 !min-h-0 !border-0 !opacity-0" />
       <span className="absolute -top-0.5 -right-0.5 text-[8px] font-semibold text-slate-400 bg-slate-100 rounded px-1">L1</span>
@@ -136,11 +136,11 @@ function FunctionNode({ data, selected }: NodeProps<{ label: string; id: string;
   );
 }
 
-/** L3 템플릿 노드: 결과 탭 하나에 대응. 추천 L2 기능으로 엣지 연결 */
-function TemplateNode({ data }: NodeProps<{ label: string; templateId: string }>) {
+/** L3 템플릿 노드: 결과 탭 하나에 대응. data.template은 클릭 시 패널용 */
+function TemplateNode({ data }: NodeProps<{ label: string; templateId: string; template?: ResultTemplate }>) {
   return (
     <div
-      className="relative w-[4rem] h-[4rem] rounded-full bg-white border-2 border-violet-300 shadow-md ring-1 ring-violet-200 flex flex-col items-center justify-center"
+      className="relative w-[4rem] h-[4rem] rounded-full bg-white border-2 border-violet-300 shadow-md ring-1 ring-violet-200 flex flex-col items-center justify-center cursor-pointer"
       title={data.label}
     >
       <Handle type="source" position={Position.Bottom} className="!w-0 !h-0 !min-w-0 !min-h-0 !border-0 !opacity-0" />
@@ -207,7 +207,7 @@ function buildGraphElements(
       id,
       type: 'category',
       position: { x: x - 36, y: y - 36 },
-      data: { label: cat, category: cat, shortLabel: CATEGORY_SHORT[cat] ?? cat, targetPos, sourcePos },
+      data: { label: cat, category: cat, shortLabel: CATEGORY_SHORT[cat] ?? cat, targetPos, sourcePos, functionIds: list.map((f) => f.id) },
       sourcePosition: sourcePos,
       targetPosition: targetPos,
     });
@@ -279,7 +279,7 @@ function buildGraphElements(
       id: tplId,
       type: 'template',
       position: { x: tx - 32, y: ty - 32 },
-      data: { label: tpl.name, templateId: tpl.id },
+      data: { label: tpl.name, templateId: tpl.id, template: tpl },
       sourcePosition: Position.Bottom,
       targetPosition: Position.Top,
     });
@@ -299,7 +299,9 @@ function buildGraphElements(
 }
 
 export interface OntologyGraphProps {
-  /** 기능 노드 클릭 시 (상세 모달용) */
+  /** 노드 클릭 시 (계층별 메타정보 패널용). root/domain/function/template 공통 */
+  onSelectNode?: (node: OntologySelectedNode) => void;
+  /** 기능 노드 클릭 시 (하위 호환, onSelectNode와 함께 호출 가능) */
   onSelectFunction?: (fn: MESFunction) => void;
   /** 그래프 컨테이너 높이 */
   height?: number;
@@ -314,6 +316,7 @@ export interface OntologyGraphProps {
  * 루트(MES) → 카테고리 → 기능 3단계 계층 구조.
  */
 const OntologyGraph: React.FC<OntologyGraphProps> = ({
+  onSelectNode,
   onSelectFunction,
   height = 420,
   highlightedIds,
@@ -328,11 +331,32 @@ const OntologyGraph: React.FC<OntologyGraphProps> = ({
 
   const onNodeClick = React.useCallback(
     (_: React.MouseEvent, node: Node) => {
-      if (node.type === 'function' && node.data?.fn && onSelectFunction) {
-        onSelectFunction(node.data.fn as MESFunction);
+      if (!onSelectNode && !onSelectFunction) return;
+      switch (node.type) {
+        case 'root':
+          onSelectNode?.({ type: 'root', data: { label: (node.data?.label as string) ?? 'Standard MES' } });
+          break;
+        case 'category': {
+          const d = node.data as { category?: string; label?: string; functionIds?: string[] };
+          onSelectNode?.({ type: 'domain', data: { category: d?.category ?? '', label: d?.label ?? '', functionIds: d?.functionIds ?? [] } });
+          break;
+        }
+        case 'function':
+          if (node.data?.fn) {
+            onSelectNode?.({ type: 'function', data: { fn: node.data.fn as MESFunction } });
+            onSelectFunction?.(node.data.fn as MESFunction);
+          }
+          break;
+        case 'template':
+          if (node.data?.template) {
+            onSelectNode?.({ type: 'template', data: { template: node.data.template as ResultTemplate } });
+          }
+          break;
+        default:
+          break;
       }
     },
-    [onSelectFunction]
+    [onSelectNode, onSelectFunction]
   );
 
   return (

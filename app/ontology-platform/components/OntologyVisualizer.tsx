@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { MES_ONTOLOGY, ONTOLOGY_SECTION_DESCRIPTION_KO } from '../constants';
-import { MESFunction, ResultTemplate } from '../types';
+import { MESFunction, ResultTemplate, OntologySelectedNode } from '../types';
 import OntologyGraph from './OntologyGraph';
 import {
   Network,
@@ -16,6 +16,7 @@ import {
   ChevronRight,
   GitBranch,
   List,
+  LayoutTemplate,
 } from 'lucide-react';
 
 /** 카테고리별 아이콘 */
@@ -42,16 +43,24 @@ function groupByCategory(ontology: MESFunction[]): Map<string, MESFunction[]> {
   return map;
 }
 
+/** L3 패널용 결과 탭 요약 (선택). analysisResult.summary 등 */
+export interface ResultSummaryForPanel {
+  summary: string;
+  topMatchName?: string;
+}
+
 interface OntologyVisualizerProps {
   embedded?: boolean;
   /** 분석 결과로 매칭된 기능 ID 목록. 리스트/그래프에서 해당 항목을 강조 표시합니다. */
   highlightedFunctionIds?: string[];
   /** L3 결과 템플릿 목록. 그래프 뷰에서 템플릿 노드 및 Template→L2 엣지를 표시합니다. */
   templates?: ResultTemplate[];
+  /** L3 템플릿 클릭 시 패널에 표시할 결과 요약 (선택) */
+  resultSummary?: ResultSummaryForPanel;
 }
 
-const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = false, highlightedFunctionIds, templates }) => {
-  const [selectedFunction, setSelectedFunction] = useState<MESFunction | null>(null);
+const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = false, highlightedFunctionIds, templates, resultSummary }) => {
+  const [selectedNode, setSelectedNode] = useState<OntologySelectedNode | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -103,7 +112,8 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
 
       {viewMode === 'graph' && (
         <OntologyGraph
-          onSelectFunction={setSelectedFunction}
+          onSelectNode={setSelectedNode}
+          onSelectFunction={(fn) => setSelectedNode({ type: 'function', data: { fn } })}
           height={embedded ? 320 : 420}
           highlightedIds={highlightedFunctionIds}
           templates={templates}
@@ -139,7 +149,7 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                         <div className="absolute left-4 top-[1.125rem] w-3 h-px bg-slate-200" style={{ marginLeft: '0.625rem' }} aria-hidden />
                         <button
                           type="button"
-                          onClick={() => setSelectedFunction(fn)}
+                          onClick={() => setSelectedNode({ type: 'function', data: { fn } })}
                           className={`flex-1 text-left pl-10 pr-4 py-3 hover:bg-slate-50/80 transition-colors group min-w-0 ${
                             highlightedFunctionIds?.includes(fn.id) ? 'bg-indigo-50/80 border-l-2 border-l-indigo-400' : ''
                           }`}
@@ -167,64 +177,137 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
         </div>
       )}
 
-      {/* 상세 모달 */}
-      {selectedFunction && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-          onClick={() => setSelectedFunction(null)}
-        >
+      {/* 오른쪽 메타정보 패널 (계층별) */}
+      {selectedNode && (
+        <>
           <div
-            className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[90] bg-slate-900/40 transition-opacity"
+            aria-hidden
+            onClick={() => setSelectedNode(null)}
+          />
+          <div
+            className="fixed right-0 top-0 bottom-0 z-[91] w-full max-w-[100vw] sm:w-[360px] bg-white border-l border-slate-200 shadow-xl flex flex-col transition-transform duration-200 ease-out"
+            role="dialog"
+            aria-label="노드 메타정보"
           >
-            <div className="bg-slate-800 p-6 text-white relative">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
+              <span className="text-sm font-semibold text-slate-800">
+                {selectedNode.type === 'root' && 'L0 Root'}
+                {selectedNode.type === 'domain' && 'L1 Domain'}
+                {selectedNode.type === 'function' && 'L2 Function'}
+                {selectedNode.type === 'template' && 'L3 Template'}
+              </span>
               <button
                 type="button"
-                onClick={() => setSelectedFunction(null)}
-                className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => setSelectedNode(null)}
+                className="p-2 rounded-lg hover:bg-slate-200 transition-colors"
+                aria-label="닫기"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-slate-600" />
               </button>
-              <div className="flex items-center gap-3 mb-2">
-                <CategoryIcon category={selectedFunction.category} className="w-6 h-6 text-indigo-300" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{selectedFunction.category} Module</span>
-              </div>
-              <h2 className="text-xl font-bold pr-10">{selectedFunction.name}</h2>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-indigo-500/20 text-indigo-200 rounded-md text-xs font-medium border border-indigo-500/30">ID: {selectedFunction.id}</span>
-                <span className="px-3 py-1 bg-slate-700 text-slate-300 rounded-md text-xs font-medium">Standard: {selectedFunction.standard}</span>
-              </div>
             </div>
-            <div className="p-6 space-y-5">
-              <section>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Info className="w-3.5 h-3.5 text-indigo-500" /> Description
-                </h4>
-                <p className="text-slate-600 text-sm leading-relaxed">{selectedFunction.descriptionKo ?? selectedFunction.description}</p>
-              </section>
-              <section>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Implementation Benefits
-                </h4>
-                <ul className="space-y-2 text-sm text-slate-700">
-                  <li className="flex items-start gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />가시성 향상 및 공정 병목 감소.</li>
-                  <li className="flex items-start gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />국제 규격 {selectedFunction.standard} 준수.</li>
-                  <li className="flex items-start gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />ERP·자동화 계층과 연동 용이.</li>
-                </ul>
-              </section>
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <p className="text-xs text-slate-400">지식 베이스 기준 최종 반영: 2024년 10월</p>
-                <button
-                  type="button"
-                  onClick={() => setSelectedFunction(null)}
-                  className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2"
-                >
-                  <CheckCircle className="w-4 h-4" /> 확인
-                </button>
-              </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {selectedNode.type === 'root' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Database className="w-6 h-6 text-indigo-600" />
+                    <h3 className="text-lg font-bold text-slate-800">{selectedNode.data.label}</h3>
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    제조 실행 시스템(MES) 표준 온톨로지 루트. ISA-95, ISO 9001, GS1 등 국제 표준을 참고한 계층 구조입니다.
+                  </p>
+                </>
+              )}
+              {selectedNode.type === 'domain' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CategoryIcon category={selectedNode.data.category} className="w-6 h-6" />
+                    <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wide">{selectedNode.data.label}</h3>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">소속 기능 (L2)</p>
+                  <ul className="space-y-2">
+                    {selectedNode.data.functionIds.map((fid) => {
+                      const fn = MES_ONTOLOGY.find((o) => o.id === fid);
+                      return fn ? (
+                        <li key={fid} className="text-sm text-slate-700 flex items-center gap-2">
+                          <span className="font-mono text-xs text-slate-400">{fn.id}</span>
+                          <span>{fn.name}</span>
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                </>
+              )}
+              {selectedNode.type === 'function' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CategoryIcon category={selectedNode.data.fn.category} className="w-6 h-6" />
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{selectedNode.data.fn.category} Module</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800">{selectedNode.data.fn.name}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-medium">ID: {selectedNode.data.fn.id}</span>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium">Standard: {selectedNode.data.fn.standard}</span>
+                  </div>
+                  <section>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <Info className="w-3.5 h-3.5 text-indigo-500" /> Description
+                    </h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">{selectedNode.data.fn.descriptionKo ?? selectedNode.data.fn.description}</p>
+                  </section>
+                  <section>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Implementation Benefits
+                    </h4>
+                    <ul className="space-y-2 text-sm text-slate-700">
+                      <li className="flex items-start gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />가시성 향상 및 공정 병목 감소.</li>
+                      <li className="flex items-start gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />국제 규격 {selectedNode.data.fn.standard} 준수.</li>
+                      <li className="flex items-start gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />ERP·자동화 계층과 연동 용이.</li>
+                    </ul>
+                  </section>
+                  <p className="text-xs text-slate-400 pt-2 border-t border-slate-100">지식 베이스 기준 최종 반영: 2024년 10월</p>
+                </>
+              )}
+              {selectedNode.type === 'template' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <LayoutTemplate className="w-6 h-6 text-violet-500" />
+                    <h3 className="text-lg font-bold text-slate-800">{selectedNode.data.template.name}</h3>
+                  </div>
+                  {(selectedNode.data.template.summary ?? resultSummary?.summary) && (
+                    <section>
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">결과 탭 요약</h4>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        {selectedNode.data.template.summary ?? resultSummary?.summary}
+                      </p>
+                    </section>
+                  )}
+                  {resultSummary?.topMatchName && (
+                    <p className="text-sm text-slate-600">
+                      <span className="font-medium text-slate-700">상위 추천 기능:</span> {resultSummary.topMatchName}
+                    </p>
+                  )}
+                  {selectedNode.data.template.recommendedFunctionIds.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">연결된 L2 기능</p>
+                      <ul className="space-y-1">
+                        {selectedNode.data.template.recommendedFunctionIds.map((fid) => {
+                          const fn = MES_ONTOLOGY.find((o) => o.id === fid);
+                          return fn ? (
+                            <li key={fid} className="text-sm text-slate-700 flex items-center gap-2">
+                              <span className="font-mono text-xs text-slate-400">{fn.id}</span>
+                              <span>{fn.name}</span>
+                            </li>
+                          ) : null;
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
