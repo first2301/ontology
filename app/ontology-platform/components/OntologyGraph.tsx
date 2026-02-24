@@ -178,6 +178,8 @@ function buildGraphElements(
   const R2 = 240; // 기능 반지름
   const R3 = 340; // L3 템플릿 반지름
   const FUN_SPREAD_DEG = 22; // 같은 카테고리 내 기능 간 각도
+  const TPL_SPREAD_DEG = 18; // 같은 Function에 연결된 L3 템플릿 간 각도(겹침 방지)
+  const TPL_RADIUS = 320; // L3 템플릿 반지름 (Function보다 바깥에 배치)
 
   // 루트 노드 (중앙)
   nodes.push({
@@ -269,20 +271,33 @@ function buildGraphElements(
     });
   });
 
-  // L3 템플릿: 연결된 L2 Function 근처에 배치. primary L2 없으면 기존 고정 3링으로 폴백
-  const R2_OFFSET = 70;
+  // L3 템플릿: 연결된 L2 Function 근처에 배치. 같은 Function을 참조하는 템플릿은 각도로 흩어 겹치지 않게 함
   const templateList = templates?.length ? templates : [];
+  const byPrimaryFid = new Map<string, number[]>();
+  templateList.forEach((tpl, tplIdx) => {
+    const primaryFid = tpl.recommendedFunctionIds[0] ?? '';
+    const arr = byPrimaryFid.get(primaryFid) ?? [];
+    arr.push(tplIdx);
+    byPrimaryFid.set(primaryFid, arr);
+  });
+
   templateList.forEach((tpl, tplIdx) => {
     const tplId = `template-${tpl.id}`;
     const primaryFid = tpl.recommendedFunctionIds[0];
     const pos = primaryFid ? functionPositionMap.get(primaryFid) : undefined;
+    const indices = primaryFid ? byPrimaryFid.get(primaryFid) ?? [] : [];
+    const indexInGroup = indices.indexOf(tplIdx);
+    const groupSize = indices.length;
+
     let tx: number;
     let ty: number;
-    if (pos) {
-      const angle = Math.atan2(pos.y - cy, pos.x - cx);
-      const r = R2 + R2_OFFSET;
-      tx = cx + r * Math.cos(angle);
-      ty = cy + r * Math.sin(angle);
+    if (pos && groupSize > 0) {
+      const baseAngle = Math.atan2(pos.y - cy, pos.x - cx);
+      const spreadRad = (TPL_SPREAD_DEG * (Math.PI / 180));
+      const offset = (indexInGroup - (groupSize - 1) / 2) * spreadRad;
+      const angle = baseAngle + offset;
+      tx = cx + TPL_RADIUS * Math.cos(angle);
+      ty = cy + TPL_RADIUS * Math.sin(angle);
     } else {
       const numTpl = templateList.length;
       const angle = numTpl === 1
