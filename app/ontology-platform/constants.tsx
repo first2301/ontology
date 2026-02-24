@@ -89,7 +89,7 @@ export const ONTOLOGY_SECTION_DESCRIPTION_KO =
 
 /**
  * 참조용 더미 템플릿. 온톨로지 그래프에 항상 함께 노출되어 사용자에게 참고할 분석 유형을 제시합니다.
- * 추후 API/DB 연동 시 교체 가능하도록 상수로 분리했습니다.
+ * dataUsageSummary는 실제 활용을 가정한 더미 현황이며, 추후 API/DB 연동 시 교체 가능하도록 상수로 분리했습니다.
  */
 export const REFERENCE_TEMPLATES: ResultTemplate[] = [
   {
@@ -100,6 +100,7 @@ export const REFERENCE_TEMPLATES: ResultTemplate[] = [
     modelName: 'RandomForest',
     preprocessingMethods: ['StandardScaler', '결측치 보간', '이상치 제거'],
     visualizationMethods: ['시계열 흐름 차트', '산점도', '실제 vs 예측'],
+    dataUsageSummary: '생산 이력 12,450건 (2024.01~2024.06), 8개 공정 변수(라인ID·작업장·Lot·수량·시작/종료 시각 등). 샘플링률 100%, 학습/검증 8:2 분할 적용.',
   },
   {
     id: 'ref-spc',
@@ -109,6 +110,7 @@ export const REFERENCE_TEMPLATES: ResultTemplate[] = [
     modelName: 'LogisticRegression',
     preprocessingMethods: ['StandardScaler', '클래스 균형', '차원 축소'],
     visualizationMethods: ['혼동 행렬', '클래스 분포', '히트맵'],
+    dataUsageSummary: '품질 검사 데이터 8,200건, 5개 품질 지표(치수·경도·불량 유형 등). 배치 단위 420개, 불량/정상 이진 분류. 시계열 순서 유지하여 검증셋 구성.',
   },
   {
     id: 'ref-pdm',
@@ -118,5 +120,6 @@ export const REFERENCE_TEMPLATES: ResultTemplate[] = [
     modelName: 'GradientBoosting',
     preprocessingMethods: ['StandardScaler', '결측치 보간', '이상치 제거', '시계열 윈도우'],
     visualizationMethods: ['특성 추세', '잔차 플롯', '실제 vs 예측'],
+    dataUsageSummary: '설비 센서 데이터 45,000건 (15개 채널, 1분 간격, 약 2일치). 진동·온도·전류 등 12개 특징 사용. 고장 라벨 320건 포함, 24시간 전 예측 타깃으로 활용.',
   },
 ];

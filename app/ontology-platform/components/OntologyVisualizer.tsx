@@ -270,64 +270,85 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
               )}
               {selectedNode.type === 'template' && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <LayoutTemplate className="w-6 h-6 text-violet-500" />
+                  <div className="flex items-center gap-2 mb-4">
+                    <LayoutTemplate className="w-6 h-6 text-violet-500 shrink-0" />
                     <h3 className="text-lg font-bold text-slate-800">{selectedNode.data.template.name}</h3>
                   </div>
                   {(selectedNode.data.template.summary ?? resultSummary?.summary) && (
-                    <section>
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">결과 탭 요약</h4>
-                      <p className="text-slate-600 text-sm leading-relaxed">
-                        {selectedNode.data.template.summary ?? resultSummary?.summary}
-                      </p>
+                    <section className="mb-4">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">결과 탭 요약</h4>
+                      <div className="pt-1">
+                        <p className="text-slate-600 text-sm leading-relaxed">
+                          {selectedNode.data.template.summary ?? resultSummary?.summary}
+                        </p>
+                      </div>
                     </section>
                   )}
-                  <section>
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">모델</h4>
-                    <p className="text-slate-600 text-sm">
-                      {selectedNode.data.template.modelName ?? '-'}
-                    </p>
+                  {selectedNode.data.template.dataUsageSummary && (
+                    <section className="mb-4">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">데이터 활용 현황</h4>
+                      <div className="pt-1 bg-slate-50/70 rounded-md px-3 py-2">
+                        <p className="text-slate-600 text-sm leading-relaxed">
+                          {selectedNode.data.template.dataUsageSummary}
+                        </p>
+                      </div>
+                    </section>
+                  )}
+                  <section className="mb-4">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">모델</h4>
+                    <div className="pt-1">
+                      <p className="text-slate-600 text-sm">{selectedNode.data.template.modelName ?? '-'}</p>
+                    </div>
                   </section>
                   {(selectedNode.data.template.preprocessingMethods?.length ?? 0) > 0 && (
-                    <section>
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">전처리 방법</h4>
-                      <ul className="space-y-1">
-                        {selectedNode.data.template.preprocessingMethods!.map((method, i) => (
-                          <li key={i} className="text-sm text-slate-600">{method}</li>
-                        ))}
-                      </ul>
+                    <section className="mb-4">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">전처리 방법</h4>
+                      <div className="pt-1">
+                        <ul className="space-y-1">
+                          {selectedNode.data.template.preprocessingMethods!.map((method, i) => (
+                            <li key={i} className="text-sm text-slate-600">{method}</li>
+                          ))}
+                        </ul>
+                      </div>
                     </section>
                   )}
                   {(selectedNode.data.template.visualizationMethods?.length ?? 0) > 0 && (
-                    <section>
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">시각화 방법</h4>
-                      <ul className="space-y-1">
-                        {selectedNode.data.template.visualizationMethods!.map((method, i) => (
-                          <li key={i} className="text-sm text-slate-600">{method}</li>
-                        ))}
-                      </ul>
+                    <section className="mb-4">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">시각화 방법</h4>
+                      <div className="pt-1">
+                        <ul className="space-y-1">
+                          {selectedNode.data.template.visualizationMethods!.map((method, i) => (
+                            <li key={i} className="text-sm text-slate-600">{method}</li>
+                          ))}
+                        </ul>
+                      </div>
                     </section>
                   )}
                   {resultSummary?.topMatchName && (
-                    <p className="text-sm text-slate-600">
-                      <span className="font-medium text-slate-700">상위 추천 기능:</span> {resultSummary.topMatchName}
-                    </p>
+                    <section className="mb-4">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">상위 추천 기능</h4>
+                      <div className="pt-1">
+                        <p className="text-slate-600 text-sm">{resultSummary.topMatchName}</p>
+                      </div>
+                    </section>
                   )}
                   {selectedNode.data.template.recommendedFunctionIds.length > 0 && (
-                    <>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">연결된 L2 기능</p>
-                      <ul className="space-y-1">
-                        {selectedNode.data.template.recommendedFunctionIds.map((fid) => {
-                          const fn = MES_ONTOLOGY.find((o) => o.id === fid);
-                          return fn ? (
-                            <li key={fid} className="text-sm text-slate-700 flex items-center gap-2">
-                              <span className="font-mono text-xs text-slate-400">{fn.id}</span>
-                              <span>{fn.name}</span>
-                            </li>
-                          ) : null;
-                        })}
-                      </ul>
-                    </>
+                    <section className="mb-4">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">연결된 L2 기능</h4>
+                      <div className="pt-1">
+                        <ul className="space-y-1">
+                          {selectedNode.data.template.recommendedFunctionIds.map((fid) => {
+                            const fn = MES_ONTOLOGY.find((o) => o.id === fid);
+                            return fn ? (
+                              <li key={fid} className="text-sm text-slate-700 flex items-center gap-2">
+                                <span className="font-mono text-xs text-slate-400">{fn.id}</span>
+                                <span>{fn.name}</span>
+                              </li>
+                            ) : null;
+                          })}
+                        </ul>
+                      </div>
+                    </section>
                   )}
                 </>
               )}

@@ -54,6 +54,8 @@ export interface ResultTemplate {
   preprocessingMethods?: string[];
   /** 추천 시각화 방법 목록 (L3 패널 표시용) */
   visualizationMethods?: string[];
+  /** 데이터 활용 현황 요약 (L3 패널 표시용, 예: 건수·기간·변수 수) */
+  dataUsageSummary?: string;
 }
 
 /** 온톨로지 그래프에서 선택된 노드. 오른쪽 패널 메타정보 표시용 */
