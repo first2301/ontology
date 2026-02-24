@@ -25,6 +25,8 @@ export interface AutoMLFitResult {
   all_results?: { model: string; mean_score: number }[];
   /** 적용/추천 전처리 방법 목록 */
   preprocessing_methods?: string[];
+  /** 추천 시각화 방법 목록 */
+  visualization_methods?: string[];
 }
 
 export type AutomlFitResponse =

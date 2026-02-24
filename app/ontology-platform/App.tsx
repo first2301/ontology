@@ -24,18 +24,58 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  TrendingUp,
   Layers,
   RefreshCcw,
-  Activity,
   Zap,
   BarChart3,
-  List,
 } from 'lucide-react';
 import DashboardHeader from './components/DashboardHeader';
 import AppSidebar, { type NavId } from './components/AppSidebar';
 import OntologyVisualizer from './components/OntologyVisualizer';
 import { IndustryType, DataProfile, MatchingResult } from './types';
+
+/** 산업별 데모용 프로파일 (업로드 없을 때 추천 결과가 산업에 따라 달라지도록) */
+function getMockProfileForIndustry(industry: IndustryType): DataProfile {
+  const base = {
+    noiseLevel: 0.15,
+    seasonality: true,
+    missingValues: 24,
+    dataTypes: { Sensor: 'Continuous', State: 'Categorical' },
+  };
+  switch (industry) {
+    case IndustryType.ELECTRONICS:
+      return {
+        ...base,
+        features: ['Temperature', 'Pressure', 'Vibration', 'Spindle_Speed', 'Torque'],
+        recordsCount: 8500,
+      };
+    case IndustryType.AUTOMOTIVE:
+      return {
+        ...base,
+        features: ['State', 'Torque', 'Spindle_Speed', 'Sensor'],
+        recordsCount: 12000,
+      };
+    case IndustryType.PHARMACEUTICAL:
+      return {
+        ...base,
+        features: ['State', 'Sensor', 'Temperature', 'Pressure'],
+        recordsCount: 5200,
+      };
+    case IndustryType.FOOD_BEVERAGE:
+      return {
+        ...base,
+        features: ['Temperature', 'Pressure', 'Sensor', 'State'],
+        recordsCount: 6800,
+      };
+    case IndustryType.SEMICONDUCTOR:
+    default:
+      return {
+        ...base,
+        features: ['Temperature', 'Pressure', 'Vibration', 'Spindle_Speed', 'Torque'],
+        recordsCount: 12500,
+      };
+  }
+}
 import { analysisService } from './services/analysisService';
 import { automlFit, type AutoMLFitResult } from './services/backendApi';
 import { parseCsvForAutoml } from './utils/csvParser';
@@ -52,6 +92,10 @@ const stepLabelKo = ['데이터 프로파일링', 'AutoML 모델링', '온톨로
 
 const SIDEBAR_COLLAPSED_KEY = 'mes-optimizer-sidebar-collapsed';
 
+/** API 응답에 없을 때 사용할 전처리·시각화 기본값 (UI 블록 항상 표시) */
+const DEFAULT_PREPROCESSING_METHODS = ['StandardScaler', '결측치 중앙값 대체', '이상치 IQR 클리핑'];
+const DEFAULT_VISUALIZATION_METHODS = ['산점도', '상관관계 행렬', '히트맵'];
+
 const App: React.FC = () => {
   const [currentNav, setCurrentNav] = useState<NavId>('data');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -63,8 +107,10 @@ const App: React.FC = () => {
     }
   });
   const [helpOpen, setHelpOpen] = useState(false);
-  /** 데이터 준비: 업로드된 공정 데이터 파일 (실제 분석은 데모 시 mock 사용, 업로드 여부만 표시) */
+  /** 데이터 준비: 업로드된 공정 데이터 파일 */
   const [uploadedProcessFile, setUploadedProcessFile] = useState<File | null>(null);
+  /** 업로드 파일 파싱 실패 시 사유 (분석 실행 시 설정, 파일 제거/재선택 시 초기화) */
+  const [uploadParseError, setUploadParseError] = useState<string | null>(null);
   const processFileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCollapsedChange = (collapsed: boolean) => {
@@ -86,20 +132,9 @@ const App: React.FC = () => {
   const [automlResult, setAutomlResult] = useState<AutoMLFitResult | null>(null);
   /** AutoML 백엔드 호출 실패 시 사용자 안내 메시지 (빈 문자열이면 미설정/시뮬레이션) */
   const [automlFallbackReason, setAutomlFallbackReason] = useState<string | null>(null);
-  const [resultTab, setResultTab] = useState<'recommendation' | 'visualization'>('recommendation');
   const [showTopMatchesOnly, setShowTopMatchesOnly] = useState(true);
-
-  const mockProfile: DataProfile = useMemo(
-    () => ({
-      features: ['Temperature', 'Pressure', 'Vibration', 'Spindle_Speed', 'Torque'],
-      recordsCount: 12500,
-      noiseLevel: 0.15,
-      seasonality: true,
-      missingValues: 24,
-      dataTypes: { Sensor: 'Continuous', State: 'Categorical' },
-    }),
-    []
-  );
+  /** 결과 탭 내 Standard MES Ontology 그래프 펼침 여부 (접기/펼치기용) */
+  const [resultOntologyGraphOpen, setResultOntologyGraphOpen] = useState(true);
 
   const mockAutomlResult: AutoMLFitResult = useMemo(
     () => ({
@@ -114,7 +149,8 @@ const App: React.FC = () => {
         { model: 'LogisticRegression', mean_score: 0.82 },
         { model: 'SVM', mean_score: 0.79 },
       ],
-      preprocessing_methods: ['StandardScaler', '결측치 중앙값 대체', '이상치 IQR 클리핑'],
+      preprocessing_methods: DEFAULT_PREPROCESSING_METHODS,
+      visualization_methods: DEFAULT_VISUALIZATION_METHODS,
     }),
     []
   );
@@ -126,7 +162,7 @@ const App: React.FC = () => {
     setAutomlFallbackReason(null);
     setCurrentStep(0);
 
-    let profile = mockProfile;
+    let profile = getMockProfileForIndustry(industry);
     let features: number[][] = [
       [1, 2, 3, 4, 5], [2, 3, 4, 5, 6], [1, 1, 2, 2, 3], [3, 4, 5, 6, 7],
       [2, 2, 3, 4, 4], [4, 5, 6, 7, 8], [1, 3, 3, 5, 5], [5, 6, 7, 8, 9],
@@ -135,12 +171,17 @@ const App: React.FC = () => {
     let target: number[] = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1];
 
     if (uploadedProcessFile) {
-      const parsed = await parseCsvForAutoml(uploadedProcessFile);
-      if (parsed) {
-        profile = parsed.profile;
-        features = parsed.features;
-        target = parsed.target;
+      const parseResult = await parseCsvForAutoml(uploadedProcessFile);
+      if (parseResult.ok) {
+        setUploadParseError(null);
+        profile = parseResult.data.profile;
+        features = parseResult.data.features;
+        target = parseResult.data.target;
+      } else {
+        setUploadParseError(parseResult.ok === false ? parseResult.error : '');
       }
+    } else {
+      setUploadParseError(null);
     }
 
     await new Promise((r) => setTimeout(r, 1000));
@@ -151,7 +192,11 @@ const App: React.FC = () => {
     if (automlRes.ok) {
       const data = automlRes.data;
       if (data.best_model != null && Number.isFinite(data.best_score)) {
-        setAutomlResult(data);
+        setAutomlResult({
+          ...data,
+          preprocessing_methods: data.preprocessing_methods?.length ? data.preprocessing_methods : DEFAULT_PREPROCESSING_METHODS,
+          visualization_methods: data.visualization_methods?.length ? data.visualization_methods : DEFAULT_VISUALIZATION_METHODS,
+        });
       } else {
         setAutomlResult(mockAutomlResult);
         setAutomlFallbackReason('모델 도출 결과가 없어 시뮬레이션 결과를 표시합니다.');
@@ -166,7 +211,7 @@ const App: React.FC = () => {
     const result = await analysisService.analyzeDataAndMatch(industry, profile, MES_ONTOLOGY);
     if (result) {
       setAnalysisResult(result);
-      setCurrentStep(3);
+      setCurrentStep(TOTAL_STEPS);
       setCurrentNav('result');
     }
     setIsProcessing(false);
@@ -264,7 +309,10 @@ const App: React.FC = () => {
                     aria-label="공정 데이터 파일 선택"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) setUploadedProcessFile(f);
+                      if (f) {
+                        setUploadedProcessFile(f);
+                        setUploadParseError(null);
+                      }
                       e.target.value = '';
                     }}
                   />
@@ -285,7 +333,7 @@ const App: React.FC = () => {
                         <p className="text-[10px] text-slate-500 mt-1">{(uploadedProcessFile.size / 1024).toFixed(1)} KB · 클릭하여 다른 파일 선택</p>
                         <button
                           type="button"
-                          onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); setUploadedProcessFile(null); }}
+                          onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); setUploadedProcessFile(null); setUploadParseError(null); }}
                           className="mt-3 text-xs font-semibold text-rose-600 hover:text-rose-700"
                         >
                           파일 제거
@@ -301,6 +349,11 @@ const App: React.FC = () => {
                       </>
                     )}
                   </label>
+                  {uploadParseError && (
+                    <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2" role="alert">
+                      {uploadParseError}
+                    </p>
+                  )}
                 </div>
                 <p className="text-[10px] text-slate-400 pt-2">다음: 사이드바에서 <strong>분석 실행</strong>으로 이동 후 실행하세요.</p>
               </div>
@@ -400,7 +453,18 @@ const App: React.FC = () => {
 
             {(isProcessing || analysisResult) && (
                 <div className="space-y-6">
-                  {/* AutoML 추천 리스트: 1~3등 순위, 시각화, 전처리 방법 */}
+                  {uploadParseError && (
+                    <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3" role="alert">
+                      <p className="font-semibold">업로드한 파일을 사용할 수 없어 기본 데이터로 분석했습니다.</p>
+                      <p className="mt-1 text-amber-700">{uploadParseError}</p>
+                    </div>
+                  )}
+                  {!uploadedProcessFile && analysisResult && (
+                    <p className="text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-lg px-4 py-2.5">
+                      데모용 기본 데이터로 추천 중입니다. 다른 결과를 보려면 <strong>데이터 준비</strong>에서 CSV를 업로드한 뒤 다시 분석 실행해 보세요.
+                    </p>
+                  )}
+                  {/* AutoML 추천 리스트: 1~5등 순위, 시각화, 전처리 방법 */}
                   {(automlResult || analysisResult) && (
                     <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
                       <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -410,7 +474,7 @@ const App: React.FC = () => {
 
                       {automlResult && (
                         <>
-                          {/* 1~3등 모델 순위 */}
+                          {/* 1~5등 모델 순위 */}
                           <div className="mb-5">
                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">모델 순위</p>
                             <div className="flex flex-wrap gap-3">
@@ -418,11 +482,13 @@ const App: React.FC = () => {
                                 const list = (automlResult.all_results ?? [{ model: automlResult.best_model, mean_score: automlResult.best_score }])
                                   .slice()
                                   .sort((a, b) => b.mean_score - a.mean_score)
-                                  .slice(0, 3);
+                                  .slice(0, 5);
                                 const rankStyle = [
                                   'bg-amber-100 text-amber-800 border-amber-200',
                                   'bg-slate-100 text-slate-700 border-slate-200',
                                   'bg-orange-100 text-orange-700 border-orange-200',
+                                  'bg-slate-50 text-slate-600 border-slate-200',
+                                  'bg-slate-50 text-slate-600 border-slate-200',
                                 ];
                                 return list.map((r, i) => (
                                   <div
@@ -459,7 +525,7 @@ const App: React.FC = () => {
                                       .slice()
                                       .sort((a, b) => b.mean_score - a.mean_score))
                                       .map((_, i) => (
-                                        <Cell key={i} fill={i === 0 ? '#4f46e5' : i === 1 ? '#6366f1' : '#818cf8'} />
+                                        <Cell key={i} fill={['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'][i] ?? '#94a3b8'} />
                                       ))}
                                   </Bar>
                                 </BarChart>
@@ -467,22 +533,39 @@ const App: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* 전처리 방법 */}
-                          {(automlResult.preprocessing_methods?.length ?? 0) > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">전처리 방법</p>
-                              <ul className="flex flex-wrap gap-2">
-                                {automlResult.preprocessing_methods!.map((method, i) => (
-                                  <li
-                                    key={i}
-                                    className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg border border-slate-200"
-                                  >
-                                    {method}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {/* 전처리 방법 · 시각화 방법 (나란히) */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {(automlResult.preprocessing_methods?.length ?? 0) > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">전처리 방법</p>
+                                <ul className="flex flex-wrap gap-2">
+                                  {automlResult.preprocessing_methods!.map((method, i) => (
+                                    <li
+                                      key={i}
+                                      className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg border border-slate-200"
+                                    >
+                                      {method}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {((automlResult.visualization_methods ?? []).length > 0) && (
+                              <div>
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">시각화 방법</p>
+                                <ul className="flex flex-wrap gap-2">
+                                  {(automlResult.visualization_methods ?? []).map((method, i) => (
+                                    <li
+                                      key={i}
+                                      className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg border border-slate-200"
+                                    >
+                                      {method}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
                         </>
                       )}
 
@@ -496,32 +579,6 @@ const App: React.FC = () => {
                           데모 모드로 실행되었습니다. 백엔드 미연결 시 샘플 데이터로 분석되며, 분류 작업에는 <strong className="text-slate-800">RandomForest</strong>·<strong className="text-slate-800">XGBoost</strong> 등을 추천합니다.
                         </p>
                       )}
-                    </div>
-                  )}
-
-                  {dataProfile && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2 text-slate-400">
-                          <Layers className="w-4 h-4" />
-                          <span className="text-[10px] font-bold uppercase">Complexity</span>
-                        </div>
-                        <p className="text-2xl font-bold text-slate-800">{dataProfile.features.length} Features</p>
-                      </div>
-                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2 text-slate-400">
-                          <TrendingUp className="w-4 h-4" />
-                          <span className="text-[10px] font-bold uppercase">Consistency</span>
-                        </div>
-                        <p className="text-2xl font-bold text-slate-800">{((1 - dataProfile.noiseLevel) * 100).toFixed(0)}% Signal</p>
-                      </div>
-                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2 text-slate-400">
-                          <Activity className="w-4 h-4" />
-                          <span className="text-[10px] font-bold uppercase">Availability</span>
-                        </div>
-                        <p className="text-2xl font-bold text-slate-800">{100 - dataProfile.missingValues}% Complete</p>
-                      </div>
                     </div>
                   )}
 
@@ -542,47 +599,8 @@ const App: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* 단순 탭: 추천 목록 | 시각화 (밑줄만) */}
-                      <div className="flex border-b border-slate-200 mb-6" role="tablist" aria-label="결과 보기 방식">
-                        <button
-                          type="button"
-                          id="tab-recommendation"
-                          role="tab"
-                          aria-selected={resultTab === 'recommendation'}
-                          aria-controls="panel-recommendation"
-                          onClick={() => setResultTab('recommendation')}
-                          className={`px-4 py-2.5 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors -mb-px ${
-                            resultTab === 'recommendation'
-                              ? 'border-indigo-600 text-indigo-600'
-                              : 'border-transparent text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          <List className="w-4 h-4 shrink-0" /> 추천 목록
-                        </button>
-                        <button
-                          type="button"
-                          id="tab-visualization"
-                          role="tab"
-                          aria-selected={resultTab === 'visualization'}
-                          aria-controls="panel-visualization"
-                          onClick={() => setResultTab('visualization')}
-                          className={`px-4 py-2.5 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors -mb-px ${
-                            resultTab === 'visualization'
-                              ? 'border-indigo-600 text-indigo-600'
-                              : 'border-transparent text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          <BarChart3 className="w-4 h-4 shrink-0" /> 시각화
-                        </button>
-                      </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8">
-                        <div
-                          className={`space-y-4 ${resultTab === 'visualization' ? 'hidden md:block' : ''}`}
-                          role="tabpanel"
-                          id="panel-recommendation"
-                          aria-labelledby="tab-recommendation"
-                        >
+                        <div className="space-y-4">
                           {analysisResult.matches.length > 3 && (
                             <button
                               type="button"
@@ -633,12 +651,7 @@ const App: React.FC = () => {
                           })}
                         </div>
 
-                        <div
-                          id="panel-visualization"
-                          role="tabpanel"
-                          aria-labelledby="tab-visualization"
-                          className={`bg-slate-50 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center border border-slate-100 ${resultTab === 'recommendation' ? 'hidden md:flex' : ''}`}
-                        >
+                        <div className="bg-slate-50 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center border border-slate-100">
                           <div className="w-full h-56 sm:h-64">
                             <ResponsiveContainer width="100%" height="100%">
                               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
@@ -662,7 +675,7 @@ const App: React.FC = () => {
                           Standard MES Ontology 반영
                         </h4>
                         <p className="text-[10px] text-slate-500 mb-3">
-                          아래 추천 기능은 표준 MES 온톨로지의 기능(ID)과 매칭된 결과입니다. Ontology 메뉴에서 해당 항목이 강조되어 표시됩니다.
+                          아래 추천 기능은 표준 MES 온톨로지의 기능(ID)과 매칭된 결과입니다. 그래프에서 해당 항목이 강조되어 표시됩니다.
                         </p>
                         <div className="flex flex-wrap gap-2 mb-4">
                           {analysisResult.matches
@@ -680,6 +693,28 @@ const App: React.FC = () => {
                                 </span>
                               );
                             })}
+                        </div>
+                        {/* 결과 화면에 매칭 강조 그래프 표시 (embedded, 접기/펼치기) */}
+                        <div className="mb-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setResultOntologyGraphOpen((v) => !v)}
+                            className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 border-b border-slate-100 transition-colors"
+                            aria-expanded={resultOntologyGraphOpen}
+                          >
+                            <span>매칭 결과 그래프</span>
+                            {resultOntologyGraphOpen ? (
+                              <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                            )}
+                          </button>
+                          {resultOntologyGraphOpen && (
+                            <OntologyVisualizer
+                              embedded
+                              highlightedFunctionIds={analysisResult.matches.map((m) => m.functionId)}
+                            />
+                          )}
                         </div>
                         <button
                           type="button"

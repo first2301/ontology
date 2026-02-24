@@ -1,7 +1,10 @@
-
 import React from 'react';
 import { MESFunction } from './types';
 
+/**
+ * Standard MES Ontology: ISA-95, ISO 9001, GS1을 참고해 설계한 MES 기능 목록.
+ * 표준 조항 검증·인증 로직은 포함하지 않으며, 기능별 출처 표시용입니다.
+ */
 export const MES_ONTOLOGY: MESFunction[] = [
   {
     id: 'F001',
