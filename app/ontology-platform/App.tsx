@@ -81,6 +81,7 @@ import { automlFit, type AutoMLFitResult } from './services/backendApi';
 import { parseCsvForAutoml } from './utils/csvParser';
 import {
   MES_ONTOLOGY,
+  REFERENCE_TEMPLATES,
   PIPELINE_STEPS,
   PIPELINE_STEPS_KO,
   PRIORITY_RECOMMENDATION_DESCRIPTION_KO,
@@ -268,8 +269,9 @@ const App: React.FC = () => {
           <div key="ontology" className="p-4 sm:p-6 lg:p-8">
             <OntologyVisualizer
               highlightedFunctionIds={analysisResult?.matches.map((m) => m.functionId)}
-              templates={
-                analysisResult
+              templates={[
+                ...REFERENCE_TEMPLATES,
+                ...(analysisResult
                   ? [
                       {
                         id: 'result-current',
@@ -279,10 +281,13 @@ const App: React.FC = () => {
                           .slice(0, 1)
                           .map((m) => m.functionId),
                         summary: analysisResult.summary,
+                        modelName: automlResult?.best_model,
+                        preprocessingMethods: automlResult?.preprocessing_methods,
+                        visualizationMethods: automlResult?.visualization_methods,
                       },
                     ]
-                  : undefined
-              }
+                  : []),
+              ]}
               resultSummary={
                 analysisResult
                   ? (() => {
@@ -741,6 +746,7 @@ const App: React.FC = () => {
                               embedded
                               highlightedFunctionIds={analysisResult.matches.map((m) => m.functionId)}
                               templates={[
+                                ...REFERENCE_TEMPLATES,
                                 {
                                   id: 'result-current',
                                   name: '기본 결과 템플릿',
@@ -749,6 +755,9 @@ const App: React.FC = () => {
                                     .slice(0, 1)
                                     .map((m) => m.functionId),
                                   summary: analysisResult.summary,
+                                  modelName: automlResult?.best_model,
+                                  preprocessingMethods: automlResult?.preprocessing_methods,
+                                  visualizationMethods: automlResult?.visualization_methods,
                                 },
                               ]}
                               resultSummary={{

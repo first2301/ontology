@@ -1,5 +1,5 @@
 import React from 'react';
-import { MESFunction } from './types';
+import { MESFunction, ResultTemplate } from './types';
 
 /**
  * Standard MES Ontology: ISA-95, ISO 9001, GS1을 참고해 설계한 MES 기능 목록.
@@ -86,3 +86,37 @@ export const INSIGHTS_SECTION_DESCRIPTION_KO =
 /** Standard MES Ontology 섹션 한 줄 설명 */
 export const ONTOLOGY_SECTION_DESCRIPTION_KO =
   '다양한 산업데이터 모델링 결과를 반영한 국제 표준 MES 기능 모델 온톨로지';
+
+/**
+ * 참조용 더미 템플릿. 온톨로지 그래프에 항상 함께 노출되어 사용자에게 참고할 분석 유형을 제시합니다.
+ * 추후 API/DB 연동 시 교체 가능하도록 상수로 분리했습니다.
+ */
+export const REFERENCE_TEMPLATES: ResultTemplate[] = [
+  {
+    id: 'ref-wip',
+    name: '참조: WIP 추적 분석',
+    recommendedFunctionIds: ['F001'],
+    summary: '실시간 재공 재고 추적 데이터 기반 흐름 분석 템플릿입니다.',
+    modelName: 'RandomForest',
+    preprocessingMethods: ['StandardScaler', '결측치 보간', '이상치 제거'],
+    visualizationMethods: ['시계열 흐름 차트', '산점도', '실제 vs 예측'],
+  },
+  {
+    id: 'ref-spc',
+    name: '참조: SPC 품질 분석',
+    recommendedFunctionIds: ['F002'],
+    summary: '통계적 공정 관리(SPC)를 위한 품질 지표 분석 템플릿입니다.',
+    modelName: 'LogisticRegression',
+    preprocessingMethods: ['StandardScaler', '클래스 균형', '차원 축소'],
+    visualizationMethods: ['혼동 행렬', '클래스 분포', '히트맵'],
+  },
+  {
+    id: 'ref-pdm',
+    name: '참조: 예지 보전 분석',
+    recommendedFunctionIds: ['F003'],
+    summary: '설비 센서 데이터 기반 고장 예측 및 예지 보전 템플릿입니다.',
+    modelName: 'GradientBoosting',
+    preprocessingMethods: ['StandardScaler', '결측치 보간', '이상치 제거', '시계열 윈도우'],
+    visualizationMethods: ['특성 추세', '잔차 플롯', '실제 vs 예측'],
+  },
+];

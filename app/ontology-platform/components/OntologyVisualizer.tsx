@@ -282,6 +282,32 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                       </p>
                     </section>
                   )}
+                  <section>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">모델</h4>
+                    <p className="text-slate-600 text-sm">
+                      {selectedNode.data.template.modelName ?? '-'}
+                    </p>
+                  </section>
+                  {(selectedNode.data.template.preprocessingMethods?.length ?? 0) > 0 && (
+                    <section>
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">전처리 방법</h4>
+                      <ul className="space-y-1">
+                        {selectedNode.data.template.preprocessingMethods!.map((method, i) => (
+                          <li key={i} className="text-sm text-slate-600">{method}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  {(selectedNode.data.template.visualizationMethods?.length ?? 0) > 0 && (
+                    <section>
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">시각화 방법</h4>
+                      <ul className="space-y-1">
+                        {selectedNode.data.template.visualizationMethods!.map((method, i) => (
+                          <li key={i} className="text-sm text-slate-600">{method}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
                   {resultSummary?.topMatchName && (
                     <p className="text-sm text-slate-600">
                       <span className="font-medium text-slate-700">상위 추천 기능:</span> {resultSummary.topMatchName}

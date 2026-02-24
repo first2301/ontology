@@ -48,6 +48,12 @@ export interface ResultTemplate {
   recommendedFunctionIds: string[];
   /** L3 패널용 결과 탭 요약 문구 (선택) */
   summary?: string;
+  /** 도출된 모델명 (L3 패널 표시용) */
+  modelName?: string;
+  /** 추천 전처리 방법 목록 (L3 패널 표시용) */
+  preprocessingMethods?: string[];
+  /** 추천 시각화 방법 목록 (L3 패널 표시용) */
+  visualizationMethods?: string[];
 }
 
 /** 온톨로지 그래프에서 선택된 노드. 오른쪽 패널 메타정보 표시용 */

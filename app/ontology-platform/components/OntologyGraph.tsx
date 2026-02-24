@@ -220,7 +220,8 @@ function buildGraphElements(
     });
   });
 
-  // 기능: 2링, 카테고리 방향 주변에 분산
+  // 기능: 2링, 카테고리 방향 주변에 분산. L3 배치용으로 기능 노드 중심 좌표 맵 구성
+  const functionPositionMap = new Map<string, { x: number; y: number }>();
   CATEGORY_ORDER.forEach((cat, catIdx) => {
     const list = byCategory.get(cat) ?? [];
     const catId = `cat-${cat}`;
@@ -233,6 +234,7 @@ function buildGraphElements(
       const funRad = baseRad + startOffset + fnIdx * (FUN_SPREAD_DEG * (Math.PI / 180));
       const fx = cx + R2 * Math.cos(funRad);
       const fy = cy + R2 * Math.sin(funRad);
+      functionPositionMap.set(nid, { x: fx, y: fy });
       const catX = cx + R1 * Math.cos(baseRad);
       const catY = cy + R1 * Math.sin(baseRad);
       const angleToCat = Math.atan2(catY - fy, catX - fx);
@@ -264,16 +266,28 @@ function buildGraphElements(
     });
   });
 
-  // L3 템플릿: 3링에 배치, 각 템플릿 → recommendedFunctionIds 인 L2 노드로 엣지
+  // L3 템플릿: 연결된 L2 Function 근처에 배치. primary L2 없으면 기존 고정 3링으로 폴백
+  const R2_OFFSET = 70;
   const templateList = templates?.length ? templates : [];
   templateList.forEach((tpl, tplIdx) => {
     const tplId = `template-${tpl.id}`;
-    const numTpl = templateList.length;
-    const angle = numTpl === 1
-      ? (90 * Math.PI) / 180
-      : (-90 + (tplIdx * 360) / numTpl) * (Math.PI / 180);
-    const tx = cx + R3 * Math.cos(angle);
-    const ty = cy + R3 * Math.sin(angle);
+    const primaryFid = tpl.recommendedFunctionIds[0];
+    const pos = primaryFid ? functionPositionMap.get(primaryFid) : undefined;
+    let tx: number;
+    let ty: number;
+    if (pos) {
+      const angle = Math.atan2(pos.y - cy, pos.x - cx);
+      const r = R2 + R2_OFFSET;
+      tx = cx + r * Math.cos(angle);
+      ty = cy + r * Math.sin(angle);
+    } else {
+      const numTpl = templateList.length;
+      const angle = numTpl === 1
+        ? (90 * Math.PI) / 180
+        : (-90 + (tplIdx * 360) / numTpl) * (Math.PI / 180);
+      tx = cx + R3 * Math.cos(angle);
+      ty = cy + R3 * Math.sin(angle);
+    }
 
     nodes.push({
       id: tplId,
