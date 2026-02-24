@@ -91,6 +91,16 @@ import {
 const TOTAL_STEPS = 4;
 const stepLabelKo = ['데이터 프로파일링', 'AutoML 모델링', '온톨로지 매칭', '전략 제안'];
 
+/** 업로드·분석에 사용된 프로파일로 데이터 활용 현황 문구 생성 (사용자 생성 템플릿용) */
+function buildDataUsageSummary(profile: DataProfile | null, industry: IndustryType): string | undefined {
+  if (!profile) return undefined;
+  const featList =
+    profile.features.length <= 5
+      ? profile.features.join(', ')
+      : `${profile.features.slice(0, 5).join(', ')} 외 ${profile.features.length - 5}개`;
+  return `업로드·분석 데이터 ${profile.recordsCount.toLocaleString()}건, ${profile.features.length}개 피처(${featList}) 기준. ${industry} 도메인 반영, 학습/검증 분할 및 전처리 적용.`;
+}
+
 const SIDEBAR_COLLAPSED_KEY = 'mes-optimizer-sidebar-collapsed';
 
 /** API 응답에 없을 때 사용할 전처리·시각화 기본값 (UI 블록 항상 표시) */
@@ -284,6 +294,7 @@ const App: React.FC = () => {
                         modelName: automlResult?.best_model,
                         preprocessingMethods: automlResult?.preprocessing_methods,
                         visualizationMethods: automlResult?.visualization_methods,
+                        dataUsageSummary: buildDataUsageSummary(dataProfile, industry),
                       },
                     ]
                   : []),
@@ -758,6 +769,7 @@ const App: React.FC = () => {
                                   modelName: automlResult?.best_model,
                                   preprocessingMethods: automlResult?.preprocessing_methods,
                                   visualizationMethods: automlResult?.visualization_methods,
+                                  dataUsageSummary: buildDataUsageSummary(dataProfile, industry),
                                 },
                               ]}
                               resultSummary={{
