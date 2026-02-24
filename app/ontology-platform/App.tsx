@@ -717,7 +717,10 @@ const App: React.FC = () => {
                                 {
                                   id: 'result-current',
                                   name: '기본 결과 템플릿',
-                                  recommendedFunctionIds: analysisResult.matches.map((m) => m.functionId),
+                                  recommendedFunctionIds: [...analysisResult.matches]
+                                    .sort((a, b) => b.score - a.score)
+                                    .slice(0, 3)
+                                    .map((m) => m.functionId),
                                 },
                               ]}
                             />
