@@ -40,6 +40,22 @@ export interface MatchingResult {
   priority: number; // 1-5
 }
 
+/** 모델 성능 지표 (L3 패널 표시용). 분류/회귀 타입에 따라 사용할 필드 선택 */
+export interface ModelPerformance {
+  /** 정확도 (분류, 0~1) */
+  accuracy?: number;
+  /** F1 스코어 (분류, 0~1) */
+  f1Score?: number;
+  /** 정밀도 (분류, 0~1) */
+  precision?: number;
+  /** 재현율 (분류, 0~1) */
+  recall?: number;
+  /** RMSE (회귀) */
+  rmse?: number;
+  /** 학습 소요 시간 (예: "2m 30s") */
+  trainingTime?: string;
+}
+
 /** 결과 탭 하나를 나타내는 템플릿. L3 계층 노드 및 추천 L2 기능 연결용 */
 export interface ResultTemplate {
   id: string;
@@ -50,6 +66,8 @@ export interface ResultTemplate {
   summary?: string;
   /** 도출된 모델명 (L3 패널 표시용) */
   modelName?: string;
+  /** 모델 성능 지표 (L3 패널 표시용) */
+  modelPerformance?: ModelPerformance;
   /** 추천 전처리 방법 목록 (L3 패널 표시용) */
   preprocessingMethods?: string[];
   /** 추천 시각화 방법 목록 (L3 패널 표시용) */

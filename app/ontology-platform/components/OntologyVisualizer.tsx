@@ -250,13 +250,13 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                     <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium">Standard: {selectedNode.data.fn.standard}</span>
                   </div>
                   <section>
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2 border-b border-slate-200 border-l-4 border-l-indigo-500 pl-2 pb-1.5 text-indigo-700">
                       <Info className="w-3.5 h-3.5 text-indigo-500" /> Description
                     </h4>
                     <p className="text-slate-600 text-sm leading-relaxed">{selectedNode.data.fn.descriptionKo ?? selectedNode.data.fn.description}</p>
                   </section>
                   <section>
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2 border-b border-slate-200 border-l-4 border-l-emerald-500 pl-2 pb-1.5 text-emerald-700">
                       <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Implementation Benefits
                     </h4>
                     <ul className="space-y-2 text-sm text-slate-700">
@@ -276,7 +276,7 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                   </div>
                   {(selectedNode.data.template.summary ?? resultSummary?.summary) && (
                     <section className="mb-4">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">결과 탭 요약</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-violet-500 pl-2 text-violet-700">결과 탭 요약</h4>
                       <div className="pt-1">
                         <p className="text-slate-600 text-sm leading-relaxed">
                           {selectedNode.data.template.summary ?? resultSummary?.summary}
@@ -286,7 +286,7 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                   )}
                   {selectedNode.data.template.dataUsageSummary && (
                     <section className="mb-4">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">데이터 활용 현황</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-sky-500 pl-2 text-sky-700">데이터 활용 현황</h4>
                       <div className="pt-1 bg-slate-50/70 rounded-md px-3 py-2">
                         <p className="text-slate-600 text-sm leading-relaxed">
                           {selectedNode.data.template.dataUsageSummary}
@@ -295,14 +295,41 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                     </section>
                   )}
                   <section className="mb-4">
-                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">모델</h4>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-slate-500 pl-2 text-slate-700">모델</h4>
                     <div className="pt-1">
                       <p className="text-slate-600 text-sm">{selectedNode.data.template.modelName ?? '-'}</p>
                     </div>
                   </section>
+                  {selectedNode.data.template.modelPerformance && (
+                    <section className="mb-4">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-emerald-500 pl-2 text-emerald-700">모델 성능</h4>
+                      <div className="pt-1">
+                        <dl className="space-y-1.5 text-sm text-slate-600">
+                          {selectedNode.data.template.modelPerformance.accuracy != null && (
+                            <div className="flex justify-between gap-2"><dt className="text-slate-500">정확도</dt><dd>{(selectedNode.data.template.modelPerformance.accuracy * 100).toFixed(1)}%</dd></div>
+                          )}
+                          {selectedNode.data.template.modelPerformance.f1Score != null && (
+                            <div className="flex justify-between gap-2"><dt className="text-slate-500">F1 스코어</dt><dd>{(selectedNode.data.template.modelPerformance.f1Score * 100).toFixed(1)}%</dd></div>
+                          )}
+                          {selectedNode.data.template.modelPerformance.precision != null && (
+                            <div className="flex justify-between gap-2"><dt className="text-slate-500">정밀도</dt><dd>{(selectedNode.data.template.modelPerformance.precision * 100).toFixed(1)}%</dd></div>
+                          )}
+                          {selectedNode.data.template.modelPerformance.recall != null && (
+                            <div className="flex justify-between gap-2"><dt className="text-slate-500">재현율</dt><dd>{(selectedNode.data.template.modelPerformance.recall * 100).toFixed(1)}%</dd></div>
+                          )}
+                          {selectedNode.data.template.modelPerformance.rmse != null && (
+                            <div className="flex justify-between gap-2"><dt className="text-slate-500">RMSE</dt><dd>{selectedNode.data.template.modelPerformance.rmse}</dd></div>
+                          )}
+                          {selectedNode.data.template.modelPerformance.trainingTime && (
+                            <div className="flex justify-between gap-2"><dt className="text-slate-500">학습 소요 시간</dt><dd>{selectedNode.data.template.modelPerformance.trainingTime}</dd></div>
+                          )}
+                        </dl>
+                      </div>
+                    </section>
+                  )}
                   {(selectedNode.data.template.preprocessingMethods?.length ?? 0) > 0 && (
                     <section className="mb-4">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">전처리 방법</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-amber-500 pl-2 text-amber-700">전처리 방법</h4>
                       <div className="pt-1">
                         <ul className="space-y-1">
                           {selectedNode.data.template.preprocessingMethods!.map((method, i) => (
@@ -314,7 +341,7 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                   )}
                   {(selectedNode.data.template.visualizationMethods?.length ?? 0) > 0 && (
                     <section className="mb-4">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">시각화 방법</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-indigo-500 pl-2 text-indigo-700">시각화 방법</h4>
                       <div className="pt-1">
                         <ul className="space-y-1">
                           {selectedNode.data.template.visualizationMethods!.map((method, i) => (
@@ -326,7 +353,7 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                   )}
                   {resultSummary?.topMatchName && (
                     <section className="mb-4">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">상위 추천 기능</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-rose-500 pl-2 text-rose-700">상위 추천 기능</h4>
                       <div className="pt-1">
                         <p className="text-slate-600 text-sm">{resultSummary.topMatchName}</p>
                       </div>
@@ -334,7 +361,7 @@ const OntologyVisualizer: React.FC<OntologyVisualizerProps> = ({ embedded = fals
                   )}
                   {selectedNode.data.template.recommendedFunctionIds.length > 0 && (
                     <section className="mb-4">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200">연결된 L2 기능</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider pb-1.5 mb-2 border-b border-slate-200 border-l-4 border-l-slate-600 pl-2 text-slate-700">연결된 L2 기능</h4>
                       <div className="pt-1">
                         <ul className="space-y-1">
                           {selectedNode.data.template.recommendedFunctionIds.map((fid) => {
